@@ -16,16 +16,8 @@ args = vars(ap.parse_args())
 
 paths = sorted(glob.glob(os.path.join(args["directory"], "*","*","*", "*.dcm")))
 
-main_dir = []
-
 for path in paths:
-    file = pydicom.dcmread(path)
-    try:
-        file.SeriesDescription
-    except NameError:
-        file.SeriesDescription = None
     if re.match(args["sequence"], str(file.SeriesDescription), flags=re.I):
-        main_dir.append(file)
         output_dir = args["output"]
         fname = os.path.basename(path)
         file_name = os.path.join(output_dir, fname)
