@@ -17,7 +17,8 @@ dir_paths = sorted(glob.glob(os.path.join(args["directory"], "*")))
 for dir_path in dir_paths:
     id = os.path.basename(dir_path)
     dir = os.mkdir(id)
-    dcm_paths = sorted(glob.glob(os.path.join(dir_path, "*", "DICOM", "*.dcm")))
+    dcm_paths = sorted(glob.glob(os.path.join(dir_path, "*", "DICOM", "*.dcm"))). # You can add or delete "*" depending on how many subdirectories there are before .dcm files, you can also remove "DICOM" or replace it with the name of the folder containing .dcm files
+
 
     for dcm_path in dcm_paths:
         file = pydicom.dcmread(dcm_path)
