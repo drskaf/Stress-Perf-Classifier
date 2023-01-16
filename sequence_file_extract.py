@@ -11,7 +11,8 @@ ap.add_argument("-d", "--directory", required=True, help="path to input director
 ap.add_argument("-s", "--sequence", required=False, help="name of required sequence")
 args = vars(ap.parse_args())
 
-dir_paths = sorted(glob.glob(os.path.join(args["directory"], "*")))
+# The path to the immediate subdirectory which will be used as an ID to the images folder
+dir_paths = sorted(glob.glob(os.path.join(args["directory"], "*")))    
 
 for dir_path in dir_paths:
     id = os.path.basename(dir_path)
