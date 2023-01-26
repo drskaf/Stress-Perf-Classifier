@@ -5,26 +5,28 @@ import re
 from skimage.transform import resize
 
 def read_perfusion_slices(lstFilesDCM):
-
-    # By Cian and Nathan: reads dicom images from given path
-    # code is mostly taken from
-    # https://pyscience.wordpress.com/2014/09/08/dicom-in-python-importing-medical-image-data-into-numpy-with-pydicom-and-vtk/
-    # makes use of the pydicom module
-
-    # it further uses position information from metadata to order slices
-    # and the returns the 3 slices separately
-
-    import pydicom
-    import os
-    import re
+    """By Cian and Nathan: Read the image slices into arrays/tensors from the DICOM. This function
+    makes use of the pydicom modules and further uses position information from
+    metadata to order slices. The slices are returned separately.
+    Code is mostly taken from:
+    https://pyscience.wordpress.com/2014/09/08/dicom-in-python-importing-medical-image-data-into-numpy-with-pydicom-and-vtk/
+    Args:
+        lstFilesDCM (list of dirs): This is a list of the original DICOMs,
+        where the ArrayDicom will be read from generated from.
+    Returns:
+        ArrayDicom (array): This is image series.
+        slicePosition (array): The corresponding slice positions for the image
+        series.
+        sliceOrientation (array): The corresponding slice orientations for the
+        image series.
+        indices (array): This is an array of the corresponding indices for the
+        image series.
+        meta (array): This is the corresponding meta data to each image in the
+        series.
+    """
 
     RefDs = pydicom.read_file(lstFilesDCM[0])
     ConstPixelDims = (int(RefDs.Rows), int(RefDs.Columns), len(lstFilesDCM))
-    ConstPixelSpacing = (
-        float(RefDs.PixelSpacing[0]),
-        float(RefDs.PixelSpacing[1]),
-        float(RefDs.SliceThickness),
-    )
 
     ArrayDicom = np.zeros(ConstPixelDims, dtype=RefDs.pixel_array.dtype)
 
@@ -36,8 +38,9 @@ def read_perfusion_slices(lstFilesDCM):
 
     # order DICOM list
     for filenameDCM in lstFilesDCM:
-        tmpFilename = filenameDCM.split(os.sep)[-2]
-        name_numbers.append([float(s) for s in re.findall(r"-?\d+\.?\d*", tmpFilename)])
+        tmpFilename = (filenameDCM.split(os.sep)[-1]).split('-')[-2]
+        name_numbers.append([float(s) for s in re.findall(r'-?\d+\.?\d*',
+                                                          tmpFilename)])
 
     name_numbers = np.abs(name_numbers)
     nums_to_order = []
@@ -47,7 +50,7 @@ def read_perfusion_slices(lstFilesDCM):
             tmp += name_numbers[i][j]
         nums_to_order.append(tmp)
 
-    true_order = np.argsort(nums_to_order)
+    true_order = (np.argsort(nums_to_order))
 
     allData = []
 
@@ -60,11 +63,19 @@ def read_perfusion_slices(lstFilesDCM):
         if ds.ImagePositionPatient not in slicePosition:
             slicePosition.append(ds.ImagePositionPatient)
             sliceOrientation.append(ds.ImageOrientationPatient)
-        indices.append(slicePosition.index(ds.ImagePositionPatient))
-        # store the raw image data
-        ArrayDicom[:, :, i] = ds.pixel_array
+            indices.append(slicePosition.index(ds.ImagePositionPatient))
+
+        if ds.pixel_array.shape[0] != ArrayDicom.shape[0]:
+            ArrayDicom[:, :, i] = resize(
+                ds.pixel_array,
+                (ArrayDicom.shape[0], ArrayDicom.shape[1]),
+                order=3,
+                preserve_range=True)
+        else:
+            ArrayDicom[:, :, i] = ds.pixel_array
 
     return ArrayDicom, slicePosition, sliceOrientation, indices, allData
+
 
 
 def order_slices(ArrayDicom, slicePosition, sliceOrientation, indices, lst,
