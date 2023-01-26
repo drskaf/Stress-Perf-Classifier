@@ -6,7 +6,7 @@ from skimage.transform import resize
 
 def read_perfusion_slices(lstFilesDCM):
 
-    # reads dicom images from given path
+    # By Cian and Nathan: reads dicom images from given path
     # code is mostly taken from
     # https://pyscience.wordpress.com/2014/09/08/dicom-in-python-importing-medical-image-data-into-numpy-with-pydicom-and-vtk/
     # makes use of the pydicom module
@@ -69,7 +69,7 @@ def read_perfusion_slices(lstFilesDCM):
 
 def order_slices(ArrayDicom, slicePosition, sliceOrientation, indices, lst,
                  meta):
-    """Order the slices based on the z-axis.
+    """By Cian and Nathan: Order the slices based on the z-axis.
     Args:
         ArrayDicom (array): This is image series.
         slicePosition (array): The corresponding slice positions for the image
