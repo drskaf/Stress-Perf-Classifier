@@ -65,13 +65,6 @@ def read_perfusion_slices(lstFilesDCM):
             sliceOrientation.append(ds.ImageOrientationPatient)
             indices.append(slicePosition.index(ds.ImagePositionPatient))
 
-        if ds.pixel_array.shape[0] != ArrayDicom.shape[0]:
-            ArrayDicom[:, :, i] = resize(
-                ds.pixel_array,
-                (ArrayDicom.shape[0], ArrayDicom.shape[1]),
-                order=3,
-                preserve_range=True)
-        else:
             ArrayDicom[:, :, i] = ds.pixel_array
 
     return ArrayDicom, slicePosition, sliceOrientation, indices, allData
