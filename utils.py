@@ -25,3 +25,38 @@ def compose_perfusion_video(lstFilesDCM):
             ArrayDicom[j, :, :] = ds.pixel_array
 
     return ArrayDicom
+
+
+def load_perfusion_data(directory):
+    """
+    :param directory: the path to the folder where dicom images are stored
+    :return: video files
+    """
+
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        if len(files) > 10:
+            subfolder = os.path.split(root)[0]
+            folder = os.path.split(subfolder)[1]
+            out_name = os.path.split(folder)[1] + '_' + os.path.split(root)[1]
+            print("\nWorking on ", out_name)
+            lstFilesDCM = []
+            for filename in files:
+                if ('dicomdir' not in filename.lower() and
+                        'dirfile' not in filename.lower() and
+                        filename[0] != '.' and
+                        'npy' not in filename.lower() and
+                        'png' not in filename.lower()):
+                    lstFilesDCM.append(os.path.join(root, filename))
+
+            print("Loading the data: {} files".format(len(lstFilesDCM)))
+            video = \
+                compose_perfusion_video(lstFilesDCM)
+
+        else:
+            for i in files[0:]:
+                print("Loading the data: {} files".format(len(files)))
+                video = pydicom.read_file(os.path.join(root, i))
+                video = video.pixel_array
+                
+    return video
