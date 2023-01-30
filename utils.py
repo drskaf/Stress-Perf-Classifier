@@ -59,4 +59,4 @@ def load_perfusion_data(directory):
                 video = pydicom.read_file(os.path.join(root, i))
                 video = video.pixel_array
                 
-    return video
+ 
