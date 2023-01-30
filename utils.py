@@ -52,6 +52,8 @@ def load_perfusion_data(directory):
             print("Loading the data: {} files".format(len(lstFilesDCM)))
             video = \
                 compose_perfusion_video(lstFilesDCM)
+            
+            return video
 
         else:
             for i in files[0:]:
@@ -59,6 +61,7 @@ def load_perfusion_data(directory):
                 video = pydicom.read_file(os.path.join(root, i))
                 video = video.pixel_array
                 
+                return video
  
 def crop_center_square(frame):
     y, x = frame.shape[0:2]
