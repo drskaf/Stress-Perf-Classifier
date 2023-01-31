@@ -62,7 +62,8 @@ def load_perfusion_data(directory):
             print("\nWorking on ", out_name)
             for i in files[0:]:
                 print("Loading the data: {} files".format(len(files)))
-                video = pydicom.read_file(os.path.join(root, i))
+                video = pydicom.read_file(os.path.join(root, i), force=True)
+                video.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
                 video = video.pixel_array
                 
                 return video
