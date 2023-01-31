@@ -56,6 +56,10 @@ def load_perfusion_data(directory):
             return video
 
         else:
+            subfolder = os.path.split(root)[0]
+            folder = os.path.split(subfolder)[1]
+            out_name = os.path.split(folder)[1] + '_' + os.path.split(root)[1]
+            print("\nWorking on ", out_name)
             for i in files[0:]:
                 print("Loading the data: {} files".format(len(files)))
                 video = pydicom.read_file(os.path.join(root, i))
