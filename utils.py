@@ -5,10 +5,12 @@ import re
 from skimage.transform import resize
 
 def compose_perfusion_video(lstFilesDCM):
-    """
+     """
     Args:
         lstFilesDCM (list of dirs): This is a list of the original DICOMs,
         where the ArrayDicom will be generated from.
+    Return:
+        3D arrays with one dimension for frames number
     """
 
     RefDs = pydicom.read_file(lstFilesDCM[0])
