@@ -29,8 +29,10 @@ def compose_perfusion_video(lstFilesDCM):
 
 def load_perfusion_data(directory):
     """
-    :param directory: the path to the folder where dicom images are stored
-    :return: video files
+    Args:
+     directory: the path to the folder where dicom images are stored
+    Return: 
+        combined 3D files with 1st dimension as frames number
     """
 
     for root, dirs, files in os.walk(directory, topdown=True):
