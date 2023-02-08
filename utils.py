@@ -73,3 +73,51 @@ def load_perfusion_data(directory):
                 return video
  
 
+def load_label_png(directory, df_info, im_size):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+    Return:
+        resized images with their labels
+    """
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            dir_name = int(folder)
+            dir_path = os.path.join(directory, folder)
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                
+                # Initiate lists of images and labels
+                images = []
+                labels = []
+
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'b':
+                    img1 = mpimg.imread(os.path.join(dir_path, file))
+                    img1 = resize(img1, (im_size, im_size))
+                if file_name == 'm':
+                    img2 = mpimg.imread(os.path.join(dir_path, file))
+                    img2 = resize(img2, (im_size, im_size))
+                if file_name == 'a':
+                    img3 = mpimg.imread(os.path.join(dir_path, file))
+                    img3 = resize(img3, (im_size, im_size))
+
+                    out = cv2.vconcat([img1, img2, img3])
+
+                    # Defining labels
+                    patient_info = df_info[df_info["ID"].values == dir_name]
+                    the_class = patient_info["Event"].astype(int)
+
+                    images.append(out)
+                    labels.append(the_class)
+
+                    return images, labels
