@@ -84,6 +84,11 @@ def load_label_png(directory, df_info, im_size):
     Return:
         resized images with their labels
     """
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
 
         # Collect perfusion .png images
@@ -91,13 +96,10 @@ def load_label_png(directory, df_info, im_size):
             folder = os.path.split(root)[1]
             dir_name = int(folder)
             dir_path = os.path.join(directory, folder)
+
             for file in files:
                 if '.DS_Store' in files:
                     files.remove('.DS_Store')
-                
-                # Initiate lists of images and labels
-                images = []
-                labels = []
 
                 # Loading images
                 file_name = os.path.basename(file)[0]
@@ -120,4 +122,4 @@ def load_label_png(directory, df_info, im_size):
                     images.append(out)
                     labels.append(the_class)
 
-                    return images, labels
+    return images, labels
