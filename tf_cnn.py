@@ -19,7 +19,7 @@ def AlexNet(INPUT_SHAPE, OUTPUT):
         Conv2D(filters=256, kernel_size=(5,5), strides=(1,1),
                             activation='relu',padding="same"),
         BatchNormalization(),
-        MaxPooling2D(pool_size=(3,3), strides=(2,2)),
+        MaxPool2D(pool_size=(3,3), strides=(2,2)),
         Conv2D(filters=384, kernel_size=(3,3), strides=(1,1),
                             activation='relu',padding="same"),
         BatchNormalization(),
