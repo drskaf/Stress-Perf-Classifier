@@ -82,7 +82,7 @@ def load_label_png(directory, df_info, im_size):
      df_info: .csv file containing the label information
      im_size: target image size
     Return:
-        resized images with their labels
+        resized 3 resized images stacked vertically with the corresponding label
     """
     # Initiate lists of images and labels
     images = []
