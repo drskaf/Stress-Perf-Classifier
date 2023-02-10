@@ -114,6 +114,8 @@ def load_label_png(directory, df_info, im_size):
                     img3 = resize(img3, (im_size, im_size))
 
                     out = cv2.vconcat([img1, img2, img3])
+                    out = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
+                    out = out[..., np.newaxis]
 
                     # Defining labels
                     patient_info = df_info[df_info["ID"].values == dir_name]
@@ -122,4 +124,4 @@ def load_label_png(directory, df_info, im_size):
                     images.append(out)
                     labels.append(the_class)
 
-    return images, labels
+    return (np.array(images), np.array(labels))
