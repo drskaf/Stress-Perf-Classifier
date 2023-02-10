@@ -47,13 +47,15 @@ args = vars(ap.parse_args())
 (images, labels) = utils.load_label_png(args["directory"], label_file, INPUT_DIM)
 le = LabelEncoder().fit(labels)
 labels = to_categorical(le.transform(labels), 2)
+for x in images:
+    x = x.astype("float") / 255.0
 
 # Splitting data
 (X_train, X_check, y_train, y_check) = train_test_split(images, labels, train_size=0.7, random_state=42)
 (X_valid, X_test, y_valid, y_test) = train_test_split(X_check, y_check, train_size=0.5, random_state=42)
 
 # Data augmentation
-aug = ImageDataGenerator(rescale= 1/255, rotation_range=20, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.2, zoom_range
+aug = ImageDataGenerator(rotation_range=20, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.2, zoom_range
                          =0.2, horizontal_flip=True, fill_mode="nearest")
 
 # Initialise the optimiser and model
