@@ -5,6 +5,13 @@ import re
 from skimage.transform import resize
 
 
+# Command line arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-d", "--directory", required=True, help="path to input directory")
+ap.add_argument("-t", "--target", required=True, help="name of the target field")
+args = vars(ap.parse_args())
+
+
 def compose_perfusion_video(lstFilesDCM):
      """
     Args:
@@ -38,7 +45,7 @@ def load_perfusion_data(directory):
         combined 3D files with 1st dimension as frames number
     """
 
-    for root, dirs, files in os.walk(directory, topdown=True):
+    for root, dirs, files in os.walk(args["directory"], topdown=True):
 
         if len(files) > 10:
             subfolder = os.path.split(root)[0]
@@ -90,7 +97,7 @@ def load_label_png(directory, df_info, im_size):
     labels = []
 
     # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
+    for root, dirs, files in os.walk(args["directory"], topdown=True):
 
         # Collect perfusion .png images
         if len(files) > 1:
@@ -120,7 +127,7 @@ def load_label_png(directory, df_info, im_size):
 
                     # Defining labels
                     patient_info = df_info[df_info["ID"].values == dir_name]
-                    the_class = patient_info["Event"].astype(int)
+                    the_class = patient_info[args["target"]].astype(int)
 
                     images.append(out)
                     labels.append(the_class)
