@@ -128,6 +128,14 @@ def load_label_png(directory, df_info, im_size):
     return (np.array(images), np.array(labels))
 
 
+def cast_df(df, col, d_type=str):
+    return df[col].astype(d_type)
+
+
+def impute_df(df, col, impute_value=0):
+    return df[col].fillna(impute_value)
+
+
 def preprocess_df(df, categorical_col_list, numerical_col_list, predictor, categorical_impute_value='nan',
                   numerical_impute_value=0):
     df[predictor] = df[predictor].astype(float)
