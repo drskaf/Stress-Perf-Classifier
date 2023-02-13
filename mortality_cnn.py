@@ -41,6 +41,7 @@ label_file = pd.read_csv('/Users/ebrahamalskaf/Documents/Labels.csv')
 # Command line arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--directory", required=True, help="path to input directory")
+ap.add_argument("-t", "--target", required=True, help="name of the target field")
 args = vars(ap.parse_args())
 
 # Loading images and labels
