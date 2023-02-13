@@ -4,6 +4,7 @@ import os
 import re
 from skimage.transform import resize
 
+
 def compose_perfusion_video(lstFilesDCM):
      """
     Args:
@@ -125,3 +126,13 @@ def load_label_png(directory, df_info, im_size):
                     labels.append(the_class)
 
     return (np.array(images), np.array(labels))
+
+
+def preprocess_df(df, categorical_col_list, numerical_col_list, predictor, categorical_impute_value='nan',
+                  numerical_impute_value=0):
+    df[predictor] = df[predictor].astype(float)
+    for c in categorical_col_list:
+        df[c] = cast_df(df, c, d_type=str)
+    for numerical_column in numerical_col_list:
+        df[numerical_column] = impute_df(df, numerical_column, numerical_impute_value)
+    return df
