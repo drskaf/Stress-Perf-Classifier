@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import LabelBinarizer, MinMaxScaler
+from sklearn.preprocessing import LabelBinarizer, MinMaxScaler, LabelEncoder
 import pandas as pd
 import numpy as np
 import glob
@@ -12,9 +12,14 @@ import matplotlib.image as mpimg
 from skimage.transform import resize
 import tf_cnns
 from keras.models import Sequential
-from keras. layers import Input, Dense, Flatten, concatenate
+from keras. layers import Input, Dense, Flatten, concatenate, Conv2D, Activation, MaxPool2D
 from keras.models import Model
 from keras.optimizers import Adam, SGD
+from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
+from sklearn.model_selection import train_test_split
+from keras import backend as K
+from keras.utils import to_categorical
+from datetime import datetime
 
 
 # Command line arguments
@@ -23,6 +28,14 @@ ap.add_argument("-d", "--directory", required=True, help="path to input director
 ap.add_argument("-t", "--target", required=True, help="name of the target field")
 args = vars(ap.parse_args())
 
+# Set parameters
+WIDTH = 224
+HEIGHT = 672
+BATCH_SIZE = 16
+NUM_EPOCHS = 250
+STEP_PER_EPOCH = 50
+N_CLASSES = 2
+
 # Load info file
 patient_df = pd.read_csv('/Users/ebrahamalskaf/Documents/patient_info.csv')
 
@@ -30,7 +43,6 @@ patient_df = pd.read_csv('/Users/ebrahamalskaf/Documents/patient_info.csv')
 categorical_col_list = ['Chronic_kidney_disease_(disorder)','Essential_hypertension', 'Gender', 'Heart_failure_(disorder)', 'Smoking_history',
 'Dyslipidaemia', 'Myocardial_infarction_(disorder)', 'Diabetes_mellitus_(disorder)', 'Cerebrovascular_accident_(disorder)']
 numerical_col_list= ['Age_on_20.08.2021_x', 'LVEF_(%)']
-PREDICTOR_FIELD = args["target"]
 
 # Loading clinical data
 def process_attributes(df, train, valid):
@@ -140,3 +152,70 @@ images, indices = load_images(args["directory"], im_size=224)
 images = images / 255.0
 df = pd.DataFrame(indices, columns=['ID'])
 info_df = pd.merge(df, patient_df, on=['ID'])
+
+# partition the data into training and testing splits using 80% of
+# the data for training and the remaining 20% for testing
+print("[INFO] processing data...")
+split = train_test_split(info_df, images, test_size=0.20, random_state=42)
+(trainAttrX, testAttrX, trainImagesX, testImagesX) = split
+# find the largest field in the training set
+trainy = trainAttrX.pop(args["target"])
+le = LabelEncoder().fit(trainy)
+trainY = to_categorical(le.transform(trainy), 2)
+testy = testAttrX.pop(args["target"])
+le = LabelEncoder().fit(testy)
+testY = to_categorical(le.transform(testy), 2)
+# process the clinical data by performing min-max scaling
+# on continuous features, one-hot encoding on categorical features,
+# and then finally concatenating them together
+(trainAttrX, testAttrX) = process_attributes(info_df,
+	trainAttrX, testAttrX)
+
+# create the MLP and CNN models
+mlp = create_mlp(trainAttrX.shape[1], regress=False)
+cnn = LeNet.build_cnn(WIDTH, HEIGHT, 1, regress=False)
+# create the input to our final set of layers as the *output* of both
+# the MLP and CNN
+combinedInput = concatenate([mlp.output, cnn.output])
+# our final FC layer head will have two dense layers, the final one
+# being our regression head
+x = Dense(4, activation="relu")(combinedInput)
+x = Dense(N_CLASSES, activation="softmax")(x)
+# our final model will accept categorical/numerical data on the MLP
+# input and images on the CNN input, outputting a single value (outcome
+# prediction)
+model = Model(inputs=[mlp.input, cnn.input], outputs=x)
+
+# compile the model using binary categorical cross-entropy given that
+# we have binary classes of either the prediction is positive or negative
+opt = Adam(lr=1e-3, decay=1e-3 / 200)
+model.compile(loss="binary_crossentropy", optimizer=opt, metrics=["accuracy"])
+weigth_path = "{}_my_model.best.hdf5".format("#mixed_mortality_predictor")
+checkpoint = ModelCheckpoint(weigth_path, monitor='val_loss', save_best_only=True, mode='min', save_weights_only=False)
+callbacks_list = [checkpoint]
+logdir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+tensorboard_callback = TensorBoard(log_dir=logdir, histogram_freq=1)
+
+# train the model
+print("[INFO] training model...")
+history = model.fit(x=[trainAttrX, trainImagesX], y=trainY, validation_data=([testAttrX, testImagesX], testY),
+          epochs=NUM_EPOCHS, batch_size=BATCH_SIZE, callbacks=[callbacks_list, tensorboard_callback])
+
+# summarize history for loss
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Mortality CNN training')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train accuracy', 'validation accuracy', 'train loss', 'validation loss'], loc='upper left')
+plt.show()
+
+# Saving model data
+image_model.save("image_mortality_predictor")
+model_json = image_model.to_json()
+with open("image_mixedmodel.json", "w") as json_file:
+    json_file.write(model_json)
+
+K.clear_session()
