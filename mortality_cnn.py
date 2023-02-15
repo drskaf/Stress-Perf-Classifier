@@ -22,13 +22,10 @@ if gpus:
         tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration
                                                                       (memory_limit=4096)])
 
-K.clear_session()
-
 # Set parameters
 INPUT_DIM = 256
 WIDTH = 256
 HEIGHT = 768
-INPUT_SHAPE = [WIDTH, HEIGHT, 1]
 BATCH_SIZE = 16
 NUM_EPOCHS = 20
 STEP_PER_EPOCH = 50
