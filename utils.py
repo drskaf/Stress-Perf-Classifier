@@ -53,9 +53,7 @@ def load_label_png(directory, target, df_info, im_size):
                     img3 = resize(img3, (im_size, im_size))
 
                     out = cv2.vconcat([img1, img2, img3])
-                    out = resize(out, (224, 224))
                     gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
-                    #out = cv2.merge([gray, gray, gray])
                     out = gray[..., np.newaxis]
 
 
