@@ -67,24 +67,6 @@ def load_label_png(directory, target, df_info, im_size):
     return (np.array(images), np.array(labels))
 
 
-def cast_df(df, col, d_type=str):
-    return df[col].astype(d_type)
-
-
-def impute_df(df, col, impute_value=0):
-    return df[col].fillna(impute_value)
-
-
-def preprocess_df(df, categorical_col_list, numerical_col_list, predictor, categorical_impute_value='nan',
-                  numerical_impute_value=0):
-    df[predictor] = df[predictor].astype(float)
-    for c in categorical_col_list:
-        df[c] = cast_df(df, c, d_type=str)
-    for numerical_column in numerical_col_list:
-        df[numerical_column] = impute_df(df, numerical_column, numerical_impute_value)
-    return df
-
-
 def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
     '''
     df: pandas dataframe, input dataset that will be split
@@ -102,84 +84,6 @@ def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
     validation = df[df[patient_key].isin(unique_values[train_size:])].reset_index(drop=True)
 
     return train, validation
-
-
-# adapted from https://www.tensorflow.org/tutorials/structured_data/feature_columns
-def df_to_dataset(df, predictor, batch_size=32):
-    df = df.copy()
-    labels = df.pop(predictor)
-    ds = tf.data.Dataset.from_tensor_slices((dict(df), labels))
-    ds = ds.shuffle(buffer_size=len(df))
-    ds = ds.batch(batch_size)
-    return ds
-
-
-# build vocab for categorical features
-def write_vocabulary_file(vocab_list, field_name, default_value, vocab_dir='vocab'):
-    output_file_path = os.path.join(vocab_dir, str(field_name) + "_vocab.txt")
-    # put default value in first row as TF requires
-    vocab_list = np.insert(vocab_list, 0, default_value, axis=0)
-    df = pd.DataFrame(vocab_list).to_csv(output_file_path, index=None, header=None)
-    return output_file_path
-
-
-def build_vocab_files(df, categorical_column_list, default_value='00'):
-    vocab_files_list = []
-    for c in categorical_column_list:
-        v_file = write_vocabulary_file(df[c].unique(), c, default_value)
-        vocab_files_list.append(v_file)
-    return vocab_files_list
-
-
-def create_tf_categorical_feature_cols(categorical_col_list,
-                                       vocab_dir='vocab'):
-    '''
-    categorical_col_list: list, categorical field list that will be transformed with TF feature column
-    vocab_dir: string, the path where the vocabulary text files are located
-    return:
-        output_tf_list: list of TF feature columns
-    '''
-    output_tf_list = []
-    for c in categorical_col_list:
-        vocab_file_path = os.path.join(vocab_dir, c + "_vocab.txt")
-        '''
-        Which TF function allows you to read from a text file and create a categorical feature
-        You can use a pattern like this below...
-        tf_categorical_feature_column = tf.feature_column.......
-        '''
-        tf_categorical_feature_column = tf.feature_column.categorical_column_with_vocabulary_file(
-            key=c, vocabulary_file=vocab_file_path, num_oov_buckets=0)
-        tf_categorical_feature_column = tf.feature_column.embedding_column(tf_categorical_feature_column, dimension=10)
-        output_tf_list.append(tf_categorical_feature_column)
-    return output_tf_list
-
-
-def create_tf_numeric_feature(col, MEAN, STD, default_value=0):
-    '''
-    col: string, input numerical column name
-    MEAN: the mean for the column in the training data
-    STD: the standard deviation for the column in the training data
-    default_value: the value that will be used for imputing the field
-    return:
-        tf_numeric_feature: tf feature column representation of the input field
-    '''
-    normalizer = functools.partial(normalize_numeric_with_zscore, mean=MEAN, std=STD)
-    tf_numeric_feature = tf.feature_column.numeric_column(
-        key=col, default_value=default_value, normalizer_fn=normalizer, dtype=tf.float64)
-    return tf_numeric_feature
-
-
-def normalize_numeric_with_zscore(col, mean, std):
-    '''
-    This function can be used in conjunction with the tf feature column for normalization
-    '''
-    return (col - mean)/std
-
-
-def calculate_stats_from_train_data(df, col):
-    mean = df[col].describe()['mean']
-    std = df[col].describe()['std']
-    return mean, std
 
 
 def compose_perfusion_video(lstFilesDCM):
