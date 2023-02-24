@@ -311,3 +311,17 @@ print('Percentage +ve LGE 1: \n{}'.format(len(lge1)/len(age_group1)))
 print('Percentage +ve LGE 2: \n{}'.format(len(lge2)/len(age_group2)))
 print('Percentage +ve LGE 3: \n{}'.format(len(lge3)/len(age_group3)))
 print('Kruskal Wallis significance test: \n{}'.format(stats.kruskal((age_group1['Positive_LGE'].values), age_group2['Positive_LGE'].values, age_group3['Positive_LGE'].values)))
+
+# Plot subgroups
+data['Genders'] = data['patient_GenderCode_y']
+fig, axs = plt.subplots(1,2)
+bins = [0,65,75,np.inf]
+names = ['<65', '65-75', '>75']
+data['Age'] = pd.cut(data['Age_on_20.08.2021_x'], bins, labels=names)
+sns.catplot(x="Age", y="Positive_perf", hue='Genders', kind="bar", data=data, ax=axs[0], palette=sns.color_palette(['lightsteelblue', 'mistyrose']))
+plt.text(1, 0.61, "p value 0.184", horizontalalignment='left', size='medium', color='black', weight='normal')
+plt.ylabel('Positive stress perfusion')
+sns.catplot(x="Age", y="Positive_LGE", hue='Genders', kind="bar", data=data, ax=axs[1], palette=sns.color_palette(['darkslateblue', 'lavender']))
+plt.text(1, 0.85, "p value 0.042", horizontalalignment='left', size='medium', color='black', weight='normal')
+plt.ylabel('Positive ischaemic LGE')
+plt.show()
