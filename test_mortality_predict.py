@@ -6,6 +6,7 @@ import argparse
 import os
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder, MinMaxScaler
 import tensorflow as tf
+from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
 from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
@@ -241,15 +242,15 @@ y_train = trainx.pop(args["target"])
 y_test = testx.pop(args["target"])
 (x_train, x_test) = process_attributes(patient_df, trainx, testx)
 
-# fit SVM model
-svc_model = SVC(class_weight='balanced', probability=True)
-svc_model.fit(x_train, y_train)
-svc_predict = svc_model.predict(x_test)
-svc_preds = svc_model.predict_proba(x_test)[:,1]
+# fit Linear model
+lr_model = LinearRegression(class_weight='balanced', probability=True)
+lr_model.fit(x_train, y_train)
+lr_predict = lr_model.predict(x_test)
+lr_preds = lr_model.predict_proba(x_test)[:,1]
 
-print('SVM ROCAUC score:',roc_auc_score(y_test, svc_preds))
-print('SVM Accuracy score:',accuracy_score(y_test, svc_predict))
-print('SVM F1 score:',f1_score(y_test, svc_predict))
+print('Linear ROCAUC score:',roc_auc_score(y_test, lr_preds))
+print('Linear Accuracy score:',accuracy_score(y_test, lr_predict))
+print('Linear F1 score:',f1_score(y_test, lr_predict))
 
 # Plot ROC
 fpr, tpr, _ = roc_curve(survival_yhat, preds2[:,1])
@@ -258,8 +259,8 @@ plt.plot(fpr, tpr, label="Mixed NN , AUC="+str(auc))
 fpr, tpr, _ = roc_curve(survival_yhat, preds1[:,1])
 auc = round(roc_auc_score(survival_yhat, preds1[:,1]), 2)
 plt.plot(fpr, tpr, label="Image CNN , AUC="+str(auc))
-fpr, tpr, _ = roc_curve(y_test, svc_preds)
-auc = round(roc_auc_score(y_test, svc_preds), 2)
+fpr, tpr, _ = roc_curve(y_test, lr_preds)
+auc = round(roc_auc_score(y_test, lr_preds), 2)
 plt.plot(fpr,tpr,label="Clinical ML Model, AUC="+str(auc))
 plt.legend()
 plt.xlabel('1 - Specificity')
@@ -274,8 +275,8 @@ plt.plot(recall, precision, label=label)
 precision, recall, thresholds = precision_recall_curve(survival_yhat, preds1[:,1])
 label='%s (F1 Score:%0.2f)' % ('Image CNN', average_precision_score(survival_yhat, preds1[:,1]))
 plt.plot(recall, precision, label=label)
-precision, recall, thresholds = precision_recall_curve(y_test, svc_preds)
-label='%s (F1 Score:%0.2f)' % ('Clinical ML Model', average_precision_score(y_test, svc_preds))
+precision, recall, thresholds = precision_recall_curve(y_test, lr_preds)
+label='%s (F1 Score:%0.2f)' % ('Clinical ML Model', average_precision_score(y_test, lr_preds))
 plt.plot(recall, precision, label=label)
 plt.xlim(0.1, 1.2)
 plt.legend()
