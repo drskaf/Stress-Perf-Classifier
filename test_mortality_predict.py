@@ -243,7 +243,7 @@ y_test = testx.pop(args["target"])
 (x_train, x_test) = process_attributes(patient_df, trainx, testx)
 
 # fit Linear model
-lr_model = LinearRegression(class_weight='balanced', probability=True)
+lr_model = LinearRegression()
 lr_model.fit(x_train, y_train)
 lr_predict = lr_model.predict(x_test)
 lr_preds = lr_model.predict_proba(x_test)[:,1]
