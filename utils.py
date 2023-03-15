@@ -116,40 +116,30 @@ def load_perfusion_data(directory):
     Args:
      directory: the path to the folder where dicom images are stored
     Return:
-        combined 3D files with 1st dimension as frames number
+        combined 3D files with 1st dimension as frames depth
     """
 
-    for root, dirs, files in os.walk(directory, topdown=True):
+    video_list = []
 
-        if len(files) > 10:
-            subfolder = os.path.split(root)[0]
-            folder = os.path.split(subfolder)[1]
-            out_name = os.path.split(folder)[1] + '_' + os.path.split(root)[1]
-            print("\nWorking on ", out_name)
-            lstFilesDCM = []
-            for filename in files:
-                if ('dicomdir' not in filename.lower() and
-                        'dirfile' not in filename.lower() and
-                        filename[0] != '.' and
-                        'npy' not in filename.lower() and
-                        'png' not in filename.lower()):
-                    lstFilesDCM.append(os.path.join(root, filename))
+    dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
+    for dir_path in dir_paths:
+        file_paths = sorted(glob.glob(os.path.join(dir_path, "*.dcm")))
 
-            print("Loading the data: {} files".format(len(lstFilesDCM)))
-            video = \
-                compose_perfusion_video(lstFilesDCM)
-
-            return video
+        if len(file_paths) > 10:
+            folder = os.path.split(dir_path)[1]
+            print("\nWorking on ", folder)
+            video = compose_perfusion_video(file_paths)
+            video_list.append(video)
 
         else:
-            subfolder = os.path.split(root)[0]
-            folder = os.path.split(root)[1]
-            out_name = os.path.split(folder)[1] + '_' + os.path.split(root)[1]
-            print("\nWorking on ", out_name)
-            for i in files[0:]:
-                print("Loading the data: {} files".format(len(files)))
-                video = pydicom.read_file(os.path.join(root, i), force=True)
-                video.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
+            folder = os.path.split(dir_path)[1]
+            print("\nWorking on ", folder)
+            for i in file_paths[0:]:
+                video = pydicom.read_file(os.path.join(dir_path, i), force=True)
+                #video.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
                 video = video.pixel_array
+                video_list.append(video)
+
+    return video_list
 
                 return video
