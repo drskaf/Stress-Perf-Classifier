@@ -120,6 +120,7 @@ def load_perfusion_data(directory):
     """
 
     video_list = []
+    indices = []
 
     dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
     for dir_path in dir_paths:
@@ -130,6 +131,7 @@ def load_perfusion_data(directory):
             print("\nWorking on ", folder)
             video = compose_perfusion_video(file_paths)
             video_list.append(video)
+            indices.append(folder)
 
         else:
             folder = os.path.split(dir_path)[1]
@@ -139,7 +141,8 @@ def load_perfusion_data(directory):
                 #video.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
                 video = video.pixel_array
                 video_list.append(video)
+                indices.append(folder)
 
-    return video_list
+    return video_list, indices
 
                 return video
