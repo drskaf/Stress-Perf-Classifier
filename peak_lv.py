@@ -20,11 +20,8 @@ for video in videos:
     pix_bins = []
     indices = []
     for i in range(len(video[:,])):
-        pix_sum = np.sum(video[i])
-        pix_mean = np.mean(video[i])
-        pix_std = np.std(video[i])
-        pix_norm = pix_sum - pix_mean // pix_std
-        pix_bins.append(pix_norm)
+        pix_max = np.max(video[i])
+        pix_bins.append(pix_max)
         indices.append(i)
     plt.bar(indices, pix_bins, color='blue')
     plt.show()
