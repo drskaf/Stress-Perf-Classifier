@@ -44,7 +44,7 @@ for videoraw, i in zip(videos, indices):
         a_peak = {}
         m_peak = {}
         b_peak = {}
-        '''Work on series without AIF frames'''
+        '''Work on series with AIF frames'''
         f = len(video[:, ]) // 4
         # Loop over the keys and calculate the sum and peak pixel values for each frame
         for k in keys:
@@ -59,19 +59,20 @@ for videoraw, i in zip(videos, indices):
             elif k > f and k <= 2 * f:
                 a_tot[k] = sum
                 a_peak[k] = max
+            # Collect frames from the third group of slices
             elif k > 2 * f and k <= 3 * f:
                 m_tot[k] = sum
                 m_peak[k] = max
-            # Collect frames from the third group of slices
+            # Collect frames from the fourth group of slices
             else:
                 b_tot[k] = sum
                 b_peak[k] = max
-
+        # Initiate dictionaries
         aif_5max = {}
         a_5max = {}
         m_5max = {}
         b_5max = {}
-
+        # Augment pixel sum and trip off the first and last few frames
         for k, v in aif_tot.items():
             if k >= 5 and k < (f - 3):
                 value = aif_tot[k - 2] + aif_tot[k - 1] + aif_tot[k] + aif_tot[k + 1] + aif_tot[k + 2]
@@ -123,7 +124,7 @@ for videoraw, i in zip(videos, indices):
         for img in video[b_l:b_l + 5]:
             plt.imshow(img, cmap='gray')
             plt.show()
-
+     
     else:
         # Initiate dictionaries
         a_tot = {}
@@ -132,6 +133,7 @@ for videoraw, i in zip(videos, indices):
         a_peak = {}
         m_peak = {}
         b_peak = {}
+        '''Work on series without AIF frames'''
         f = len(video[:, ]) // 3
         for k in keys:
             img = utils.centre_crop(video[k])
@@ -151,9 +153,7 @@ for videoraw, i in zip(videos, indices):
                 b_peak[k] = max
 
         # Generate a list of peak pixels values then find the key of the frame with the max value,
-        # this will be followed by 4-5 frames to get the myocardial contrast frame
         # This will be done on all 3 groups of slices
-
         # First, identify sequence which performs better with sum pixel rather than peak
         if videoraw.PulseSequenceName == 'B-TFE':
             a_5max = {}
