@@ -10,6 +10,10 @@ import glob
 from collections import Counter
 import tensorflow as tf
 import functools
+import dicom2nifti
+from pathlib import Path
+import nibabel as nib
+import dicom2nifti.settings as settings
 
 
 def load_label_png(directory, target, df_info, im_size):
@@ -119,8 +123,11 @@ def load_perfusion_data(directory):
         combined 3D files with 1st dimension as frames depth
     """
 
-    video_list = []
-    indices = []
+    videoStack_list = []
+    indicesStack = []
+    videoSingle_list = []
+    indicesSingle = []
+    nifti_list = []
 
     dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
     for dir_path in dir_paths:
@@ -129,20 +136,27 @@ def load_perfusion_data(directory):
         if len(file_paths) > 10:
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
-            video = compose_perfusion_video(file_paths)
-            video_list.append(video)
-            indices.append(folder)
+            dicom = pydicom.read_file(file_paths[0])
+            settings.disable_validate_slice_increment()
+            dicom2nifti.convert_directory(dir_path, dir_path)
+            nifti_paths = glob.glob(os.path.join(dir_path, "*.nii.gz"))
+            for nifti_path in nifti_paths:
+                nifti = nib.load(nifti_path)
+                video = nifti.get_fdata()
+                nifti_list.append(video)
+                videoSingle_list.append(dicom)
+                indicesSingle.append(folder)
 
         else:
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
             for i in file_paths[0:]:
                 video = pydicom.read_file(os.path.join(dir_path, i), force=True)
-                #video.file_meta.TransferSyntaxUID = pydicom.uid.ImplicitVRLittleEndian
-                video = video.pixel_array
-                video_list.append(video)
-                indices.append(folder)
+                videoStack_list.append(video)
+                indicesStack.append(folder)
 
-    return video_list, indices
+    return nifti_list, videoSingle_list, indicesSingle, videoStack_list, indicesStack
+
+
 
                 return video
