@@ -120,14 +120,13 @@ def load_perfusion_data(directory):
     Args:
      directory: the path to the folder where dicom images are stored
     Return:
-        combined 3D files with 1st dimension as frames depth
+        list of stacked dicoms, single dicoms list, and their indices
     """
 
     videoStack_list = []
     indicesStack = []
     videoSingle_list = []
     indicesSingle = []
-    nifti_list = []
 
     dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
     for dir_path in dir_paths:
@@ -136,16 +135,12 @@ def load_perfusion_data(directory):
         if len(file_paths) > 10:
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
-            dicom = pydicom.read_file(file_paths[0])
-            settings.disable_validate_slice_increment()
-            dicom2nifti.convert_directory(dir_path, dir_path)
-            nifti_paths = glob.glob(os.path.join(dir_path, "*.nii.gz"))
-            for nifti_path in nifti_paths:
-                nifti = nib.load(nifti_path)
-                video = nifti.get_fdata()
-                nifti_list.append(video)
-                videoSingle_list.append(dicom)
-                indicesSingle.append(folder)
+            vlist = []
+            for file_path in file_paths:
+                img = pydicom.read_file(file_path)
+                vlist.append(img)
+            videoSingle_list.append(vlist)
+            indicesSingle.append(folder)
 
         else:
             folder = os.path.split(dir_path)[1]
@@ -155,8 +150,6 @@ def load_perfusion_data(directory):
                 videoStack_list.append(video)
                 indicesStack.append(folder)
 
-    return nifti_list, videoSingle_list, indicesSingle, videoStack_list, indicesStack
-
-
+    return videoSingle_list, indicesSingle, videoStack_list, indicesStack
 
                 return video
