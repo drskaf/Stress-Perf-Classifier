@@ -152,4 +152,5 @@ def load_perfusion_data(directory):
 
     return videoSingle_list, indicesSingle, videoStack_list, indicesStack
 
-                return video
+
+
