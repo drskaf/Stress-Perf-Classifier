@@ -120,13 +120,12 @@ def load_perfusion_data(directory):
     Args:
      directory: the path to the folder where dicom images are stored
     Return:
-        list of stacked dicoms, single dicoms list, and their indices
+        combined 3D files with 1st dimension as frames depth
     """
 
-    videoStack_list = []
-    indicesStack = []
-    videoSingle_list = []
-    indicesSingle = []
+    videoList = []
+    indicesList = []
+    videorawList = []
 
     dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
     for dir_path in dir_paths:
@@ -136,21 +135,29 @@ def load_perfusion_data(directory):
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
             vlist = []
+            vrlist = []
             for file_path in file_paths:
-                img = pydicom.read_file(file_path)
+                imgraw = pydicom.read_file(file_path)
+                vrlist.append(imgraw)
+                img = imgraw.pixel_array
                 vlist.append(img)
-            videoSingle_list.append(vlist)
-            indicesSingle.append(folder)
+            videoraw = np.stack(vrlist, axis=0)
+            videorawList.append(videoraw)
+            video = np.stack(vlist, axis=0)
+            videoList.append(video)
+            indicesList.append(folder)
 
         else:
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
             for i in file_paths[0:]:
-                video = pydicom.read_file(os.path.join(dir_path, i), force=True)
-                videoStack_list.append(video)
-                indicesStack.append(folder)
+                videoraw = pydicom.read_file(os.path.join(dir_path, i), force=True)
+                videorawList.append(videoraw)
+                video = videoraw.pixel_array
+                videoList.append(video)
+                indicesList.append(folder)
 
-    return videoSingle_list, indicesSingle, videoStack_list, indicesStack
+    return videorawList, videoList, indicesList
 
 
 def centre_crop(img, new_width=None, new_height=None):
