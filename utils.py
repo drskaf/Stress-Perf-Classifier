@@ -37,7 +37,8 @@ def load_label_png(directory, target, df_info, im_size):
         # Collect perfusion .png images
         if len(files) > 1:
             folder = os.path.split(root)[1]
-            dir_name = int(folder)
+            folder_strip = folder.rstrip('_')
+            dir_name = int(folder_strip)
             dir_path = os.path.join(directory, folder)
 
             for file in files:
