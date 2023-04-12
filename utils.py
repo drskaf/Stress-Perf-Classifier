@@ -123,8 +123,10 @@ def load_perfusion_data(directory):
         combined 3D files with 1st dimension as frames depth
     """
 
-    videoList = []
-    indicesList = []
+    videoStackList = []
+    indicesStackList = []
+    videoSingleList = []
+    indicesSingleList = []
     videorawList = []
 
     dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
@@ -141,23 +143,21 @@ def load_perfusion_data(directory):
                 vrlist.append(imgraw)
                 img = imgraw.pixel_array
                 vlist.append(img)
-            videoraw = np.stack(vrlist, axis=0)
-            videorawList.append(videoraw)
-            video = np.stack(vlist, axis=0)
-            videoList.append(video)
-            indicesList.append(folder)
+            videorawList.append(vrlist)
+            videoSingleList.append(vlist)
+            indicesSingleList.append(folder)
 
         else:
             folder = os.path.split(dir_path)[1]
             print("\nWorking on ", folder)
             for i in file_paths[0:]:
+                # Read stacked dicom and add to list
                 videoraw = pydicom.read_file(os.path.join(dir_path, i), force=True)
-                videorawList.append(videoraw)
-                video = videoraw.pixel_array
-                videoList.append(video)
-                indicesList.append(folder)
+                videoStackList.append(videoraw)
+                indicesStackList.append(folder)
 
-    return videorawList, videoList, indicesList
+    return videorawList, videoSingleList, indicesSingleList, videoStackList, indicesStackList
+
 
 
 def centre_crop(img, new_width=None, new_height=None):
