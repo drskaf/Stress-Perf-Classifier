@@ -63,8 +63,10 @@ def load_label_png(directory, target, df_info, im_size):
 
 
                     # Defining labels
-                    patient_info = df_info[df_info["ID"].values == dir_name]
-                    the_class = patient_info[target].astype(int)
+                    if df[df["ID"].values == int(folder_strip)][target].values == 1:
+                        the_class = 1
+                    else:
+                        the_class = 2
 
                     images.append(out)
                     labels.append(the_class)
