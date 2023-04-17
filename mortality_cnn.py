@@ -43,6 +43,8 @@ args = vars(ap.parse_args())
 
 # Loading images and labels
 (images, labels) = utils.load_label_png(args["directory"], label_file, INPUT_DIM)
+class_weight = {0: 8.71559633 ,
+                1: 0.53042993}
 le = LabelEncoder().fit(labels)
 labels = to_categorical(le.transform(labels), 2)
 images = images.astype("float") / 255.0
@@ -72,7 +74,7 @@ tensorboard_callback = TensorBoard(log_dir=logdir, histogram_freq=1)
 # Training the model
 print("[INFO] Training the model ...")
 history = image_model.fit_generator(aug.flow(X_train, y_train, batch_size=BATCH_SIZE), validation_data= (X_valid, y_valid), epochs=NUM_EPOCHS,
-                  steps_per_epoch=len(X_train )// 16, callbacks=[callbacks_list, tensorboard_callback], verbose=1)
+                  steps_per_epoch=len(X_train )// 16, callbacks=[callbacks_list, tensorboard_callback], class_weight= class_weight, verbose=1)
 
 # summarize history for loss
 plt.plot(history.history['accuracy'])
