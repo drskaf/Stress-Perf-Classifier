@@ -29,7 +29,7 @@ def load_label_png(directory, target, df_info, im_size):
     """
     # Initiate lists of images and labels
     images = []
-    indices = []
+    labels = []
 
     # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -60,11 +60,14 @@ def load_label_png(directory, target, df_info, im_size):
                     out = cv2.vconcat([img1, img2, img3])
                     gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
                     out = gray[..., np.newaxis]
+                    
+                    patient_info = df[df["ID"].values == int(folder_strip)]
+                    the_class = patient_info[target]
 
                     images.append(out)
-                    indices.append(int(folder_strip)
+                    labels.append(the_class)
 
-    return (np.array(images), indices)
+    return (np.array(images), np.array(labels))
 
 
 def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
