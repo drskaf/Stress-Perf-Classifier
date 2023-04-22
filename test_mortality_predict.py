@@ -152,7 +152,7 @@ def load_images(directory, im_size):
 testImageX = testImageX / 255.0
 df = pd.DataFrame(indices, columns=['ID'])
 info_df = pd.merge(df, patient_df, on=['ID'])
-testy = info_df.pop(args["target"])
+testy = info_df[args["target"]]
 le = LabelEncoder().fit(testy)
 testY = to_categorical(le.transform(testy), 2)
 
@@ -238,8 +238,8 @@ def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
     return train, validation
 
 trainx, testx = patient_dataset_splitter(patient_df, patient_key='patient_TrustNumber')
-y_train = trainx.pop(args["target"])
-y_test = testx.pop(args["target"])
+y_train = trainx[args["target"]]
+y_test = testx[args["target"]]
 (x_train, x_test) = process_attributes(patient_df, trainx, testx)
 
 # fit Linear model
