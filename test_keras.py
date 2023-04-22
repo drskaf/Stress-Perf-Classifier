@@ -13,7 +13,10 @@ from tensorflow.keras.optimizers import Adam, SGD, RMSprop
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from datetime import datetime
 from keras import backend as K
+from keras import Model, Sequential
 from keras.losses import BinaryCrossentropy, SparseCategoricalCrossentropy, CategoricalCrossentropy
+from keras.layers import Dropout, Flatten, Dense, concatenate, add, Input, Conv2D, MaxPool2D, BatchNormalization, \
+    AveragePooling2D, GlobalAveragePooling2D, Activation, ZeroPadding2D
 from keras.utils import to_categorical, plot_model
 import visualkeras
 from PIL import ImageFont
@@ -40,42 +43,9 @@ STEP_PER_EPOCH = 2
 N_CLASSES = 1
 CHECKPOINT_PATH = os.path.join("model_weights", "cp-{epoch:02d}")
 
-# ''' Fine tuning step '''
-
-import ssl
-from keras import Model, Sequential
-from keras.layers import Dropout, Flatten, Dense, concatenate, add, Input, Conv2D, MaxPool2D, BatchNormalization, \
-    AveragePooling2D, GlobalAveragePooling2D, Activation, ZeroPadding2D
-
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-from keras.applications.vgg16 import VGG16
-
-model = VGG16(include_top=True, weights='imagenet')
-
-transfer_layer = model.get_layer('block5_pool')
-vgg_model = Model(inputs=model.input, outputs=transfer_layer.output)
-
-for layer in vgg_model.layers[0:17]:
-    layer.trainable = False
-my_model = Sequential()
-my_model.add(vgg_model)
-my_model.add(Flatten())
-my_model.add(Dropout(0.5))
-my_model.add(Dense(1024, activation='relu'))
-my_model.add(Dropout(0.5))
-my_model.add(Dense(512, activation='relu'))
-my_model.add(Dropout(0.5))
-my_model.add(Dense(2, activation='sigmoid'))
-
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
-    for gpu in gpus:z
+    for gpu in gpus:
         tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration
                                                                       (memory_limit=4096)])
 
@@ -85,42 +55,11 @@ label_file = pd.read_csv('/Users/ebrahamalskaf/Documents/Labels.csv')
 # Loading images and labels
 (images, labels) = utils.load_label_png(args["directory"], label_file, args["target"], INPUT_DIM)
 images = images // 255.0
-#df = pd.DataFrame(indices, columns=['ID'])
-#info_df = pd.merge(df, label_file, on=['ID'])
-#labels = np.array(info_df.pop(args["target"]))
-
-# class_weight = class_weight.compute_class_weight('balanced', classes=np.unique(labels), y=labels)
-# print(class_weight)
-class_weight = {0: 0.53042993,
-                1: 8.71559633}
-#le = LabelEncoder().fit(labels)
-#labels = to_categorical(le.transform(labels), 2)
 
 # Splitting data
 (X_train, X_valid, y_train, y_valid) = train_test_split(images, labels, train_size=0.7, stratify=labels)
-#y_train = np.concatenate(y_train, axis=0)
-#y_valid = np.concatenate(y_valid, axis=0)
 print(y_train[:32])
 print(y_valid[:32])
-
-#pos_train = []
-#pos_val = []
-#for i in y_train:
- #   if i[0] == 1:
-  #      pos_train.append(i)
-#for i in y_valid:
- #   if i[0] == 1:
-  #      pos_val.append(i)
-# print(len(pos_train))
-# print(len(pos_val))
-
-# Data augmentation
-aug = ImageDataGenerator(samplewise_center=True, samplewise_std_normalization=True, rotation_range=20,
-                         width_shift_range=0.1,
-                         height_shift_range=0.1, shear_range=0.2, zoom_range
-                         =0.2, horizontal_flip=True, fill_mode="nearest")
-
-v_aug = ImageDataGenerator(samplewise_center=True, samplewise_std_normalization=True)
 
 # Initialise the optimiser and model
 print("[INFO] compiling model ...")
@@ -138,7 +77,6 @@ METRICS = [
     tf.keras.metrics.AUC(name='prc', curve='PR'),  # precision-recall curve
 ]
 
-# image_model = tf_cnns.LeNet.build(WIDTH, HEIGHT, depth=1, classes=N_CLASSES)
 def build_model(output_bias=None):
     if output_bias is not None:
         output_bias = tf.keras.initializers.Constant(output_bias)
@@ -175,9 +113,6 @@ def build_model(output_bias=None):
 
     return model
 
-# image = visualkeras.layered_view(image_model, legend=True)
-# plt.imshow(image)
-# plt.show()
 weigth_path = "{}_my_model.best.hdf5".format("image_mortality_LeNet")
 checkpoint = ModelCheckpoint(weigth_path, monitor='val_prc', save_best_only=True, mode='max', save_weights_only=False)
 
@@ -188,25 +123,18 @@ early_stopping = tf.keras.callbacks.EarlyStopping(
     mode='max',
     restore_best_weights=True)
 
+# Initial bias
 image_model = build_model()
-print(image_model.predict(X_train[:32]))
-# results = image_model.evaluate(X_train, y_train, batch_size=BATCH_SIZE, verbose=0)
-# print("Loss: {:0.4f}".format(results[0]))
-
 initial_bias = np.log([0.053])
-# print(initial_bias)
-
 model = build_model(output_bias=initial_bias)
-# print(model.predict(X_train[:10]))
-# results = model.evaluate(X_train, y_train, batch_size=BATCH_SIZE, verbose=0)
-# print("Loss: {:0.4f}".format(results[0]))
-
 initial_weights = os.path.join(tempfile.mkdtemp(), 'initial_weights')
 model.save_weights(initial_weights)
 
+# Reload model with initial bias
 image_model = build_model()
 image_model.load_weights(initial_weights)
 
+# Tensorboard logs
 logdir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = TensorBoard(log_dir=logdir, histogram_freq=1)
 
@@ -214,7 +142,6 @@ tensorboard_callback = TensorBoard(log_dir=logdir, histogram_freq=1)
 # print("[INFO] Training the model ...")
 history = image_model.fit(X_train, y_train, validation_data=(X_valid, y_valid),
                           epochs=NUM_EPOCHS,
-                          #steps_per_epoch=len(X_train) // 32,
                           callbacks=[early_stopping, checkpoint, tensorboard_callback])
 
 # summarize history for loss
