@@ -50,10 +50,10 @@ def load_label_png(directory, target, df_info, im_size):
                 if file_name == 'b':
                     img1 = mpimg.imread(os.path.join(dir_path, file))
                     img1 = resize(img1, (im_size, im_size))
-                if file_name == 'm':
+                elif file_name == 'm':
                     img2 = mpimg.imread(os.path.join(dir_path, file))
                     img2 = resize(img2, (im_size, im_size))
-                if file_name == 'a':
+                elif file_name == 'a':
                     img3 = mpimg.imread(os.path.join(dir_path, file))
                     img3 = resize(img3, (im_size, im_size))
 
