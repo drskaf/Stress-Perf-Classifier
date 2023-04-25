@@ -41,7 +41,6 @@ BATCH_SIZE = 32
 NUM_EPOCHS = 100
 STEP_PER_EPOCH = 2
 N_CLASSES = 1
-CHECKPOINT_PATH = os.path.join("model_weights", "cp-{epoch:02d}")
 
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
@@ -52,14 +51,72 @@ if gpus:
 # Info file
 label_file = pd.read_csv('/Users/ebrahamalskaf/Documents/Labels.csv')
 
+def load_label_png(directory, df, im_size):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+    Return:
+        resized images in a dataframe column
+    """
+    # Initiate lists of images and indices
+    images = []
+    indices = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'b':
+                    img1 = mpimg.imread(os.path.join(dir_path, file))
+                    img1 = resize(img1, (im_size, im_size))
+                elif file_name == 'm':
+                    img2 = mpimg.imread(os.path.join(dir_path, file))
+                    img2 = resize(img2, (im_size, im_size))
+                elif file_name == 'a':
+                    img3 = mpimg.imread(os.path.join(dir_path, file))
+                    img3 = resize(img3, (im_size, im_size))
+
+                    out = cv2.vconcat([img1, img2, img3])
+                    gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
+                    #gray = resize(gray, (224, 224))
+                    #out = cv2.merge([gray, gray, gray])
+                    out = gray[..., np.newaxis]
+                    out = np.array(out)
+
+                    images.append(out)
+                    indices.append(int(folder_strip))
+
+    idx_df = pd.DataFrame(indices, columns=['ID'])
+    info_df = pd.merge(df, idx_df, on=['ID'])
+    info_df['images'] = images
+
+    return (info_df)
+
 # Loading images and labels
-(images, labels) = utils.load_label_png(args["directory"], label_file, args["target"], INPUT_DIM)
-images = images // 255.0
+(df) = load_label_png(args["directory"], label_file, args["target"], INPUT_DIM)
 
 # Splitting data
-(X_train, X_valid, y_train, y_valid) = train_test_split(images, labels, train_size=0.7, stratify=labels)
-print(y_train[:32])
-print(y_valid[:32])
+(df_train, df_valid) = train_test_split(df, train_size=0.7, stratify=df[args["target"]])
+
+X_train = np.array([np.array(x) for x in df_train['images']])
+X_valid = np.array([np.array(z) for z in df_valid['images']])
+
+# Define labels
+y_train = np.array(df_train.pop(args["target"]))
+y_valid = np.array(df_valid.pop(args["target"]))
 
 # Initialise the optimiser and model
 print("[INFO] compiling model ...")
