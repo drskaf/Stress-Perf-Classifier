@@ -31,7 +31,7 @@ args = vars(ap.parse_args())
 # Set parameters
 WIDTH = 224
 HEIGHT = 672
-BATCH_SIZE = 16
+BATCH_SIZE = 64
 NUM_EPOCHS = 250
 STEP_PER_EPOCH = 50
 N_CLASSES = 2
