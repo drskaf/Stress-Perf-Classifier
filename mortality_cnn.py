@@ -126,7 +126,7 @@ checkpoint = ModelCheckpoint(weigth_path, monitor='val_prc', save_best_only=True
 early_stopping = tf.keras.callbacks.EarlyStopping(
     monitor='val_prc',
     verbose=1,
-    patience=30,
+    patience=20,
     mode='max',
     restore_best_weights=True)
 
