@@ -43,7 +43,7 @@ if gpus:
 label_file = pd.read_csv('/Users/ebrahamalskaf/Documents/Labels.csv')
 
 # Loading images and labels
-(df) = utils.load_label_png(args["directory"], label_file, INPUT_DIM)
+(df) = utils.load_image_png(args["directory"], label_file, INPUT_DIM)
 
 # class_weight = class_weight.compute_class_weight('balanced', classes=np.unique(labels), y=labels)
 # print(class_weight)
