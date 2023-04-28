@@ -184,4 +184,53 @@ def centre_crop(img, new_width=None, new_height=None):
     return centre_cropped_img
 
 
+def load_image_png(directory, df, im_size):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+    Return:
+        images as a dataframe
+    """
+    # Initiate lists of images and labels
+    images = []
+    indices = []
 
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'b':
+                    img1 = mpimg.imread(os.path.join(dir_path, file))
+                    img1 = resize(img1, (im_size, im_size))
+                elif file_name == 'm':
+                    img2 = mpimg.imread(os.path.join(dir_path, file))
+                    img2 = resize(img2, (im_size, im_size))
+                elif file_name == 'a':
+                    img3 = mpimg.imread(os.path.join(dir_path, file))
+                    img3 = resize(img3, (im_size, im_size))
+
+                    out = cv2.vconcat([img1, img2, img3])
+                    gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
+                    out = gray[..., np.newaxis]
+
+                    images.append(out)
+                    indices.append(int(folder_strip))
+
+    idx_df = pd.DataFrame(indices, columns=['ID'])
+    info_df = pd.merge(df, idx_df, on=['ID'])
+    info_df['images'] = images
+
+    return (info_df)
