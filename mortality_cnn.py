@@ -52,8 +52,8 @@ class_weight = {0: 0.53042993,
 
 # Splitting data
 (df_train, df_valid) = train_test_split(df, train_size=0.7, stratify=df[args["target"]])
-X_train = np.array([np.array(x) for x in df_train['images']])
-X_valid = np.array([np.array(z) for z in df_valid['images']])
+X_train = np.array([x for x in df_train['images']]) / 255.0
+X_valid = np.array([z for z in df_valid['images']]) / 255.0
 y_train = np.array(df_train.pop(args["target"]))
 tlist = y_train.tolist()
 print(tlist.count(1))
