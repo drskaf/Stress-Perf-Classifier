@@ -234,3 +234,49 @@ def load_image_png(directory, df, im_size):
     info_df['images'] = images
 
     return (info_df)
+
+
+def load_multiclass_apical_png(directory, df, im_size):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+    Return:
+        resized images with their labels
+    """
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            dir_path = os.path.join(directory, folder)
+
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'a':
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+                    #out = gray[..., np.newaxis]
+                    images.append(out)
+
+                    # Attach classes
+                    patient_info = df[df["ID"].values == int(folder_strip)]
+                    the_class = patient_info['papical']
+                    labels.append(the_class)
+
+    return (np.array(images), np.array(labels))
