@@ -43,9 +43,6 @@ patient_info['pbasal'] = patient_info[['p_basal anterior','p_basal anteroseptum'
 patient_info['pmid'] = patient_info[['p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
                                        'p_mid inferolateral','p_mid anterolateral']].apply(lambda x: '{}'.format(np.array(x)), axis=1)
 patient_info['papical'] = patient_info[['p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']].apply(lambda x:'{}'.format(np.array(x)), axis=1)
-#.apply(
-    #lambda x: '{}'.format(np.pad(np.array(x), (0,2), 'constant', constant_values=0)), axis=1
-#)
 
 print(patient_info['papical'].head())
 
