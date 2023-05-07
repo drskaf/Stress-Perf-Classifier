@@ -55,17 +55,6 @@ print(patient_info['papical'].head())
 # Load images and label them
 (info_df) = utils.load_label_png(args["directory"], patient_info, INPUT_DIM)
 
-#print(np.unique(labels))
-#print(patient_info['papical'].head())
-
-#classes = set(patient_info['papical'])
-#mapper = {k: i + 1 for i, k in enumerate(classes)}
-#patient_info['papical'] = patient_info['papical'].map(mapper)
-#class_weight = class_weight.compute_class_weight('balanced', classes=np.unique(classes), y=patient_info['papical'].values)
-#le = LabelEncoder().fit(y_over)
-#labels = to_categorical(le.transform(y_over), N_CLASSES)
-#print(labels[:5])
-
 #''' Fine tuning step '''
 
 import ssl
