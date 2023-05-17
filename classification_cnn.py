@@ -44,26 +44,12 @@ patient_info['pbasal'] = patient_info[['p_basal anterior','p_basal anteroseptum'
 patient_info['pmid'] = patient_info[['p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
                                        'p_mid inferolateral','p_mid anterolateral']].apply(lambda x: '{}'.format(np.array(x)), axis=1)
 patient_info['papical'] = patient_info[['p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']].apply(lambda x:'{}'.format(np.array(x)), axis=1)
-#format(np.pad(np.array(x), (0,2), 'constant', constant_values=0)), axis=1)
-#print(patient_info['papical'].head())
 
 
           ### Training apical AHA segments classification ###
 
 # Load images and label them
 (df) = utils.load_multiclass_apical_png(args["directory"], patient_info, INPUT_DIM)
-#print(labels[:5])
-#print(len(labels))
-#print(np.unique(labels, return_counts=True))
-
-#info_df['p_aha'] = patient_info[['p_basal anterior','p_basal anteroseptum','p_basal inferoseptum','p_basal inferior'
- #                       ,'p_basal inferolateral', 'p_basal anterolateral', 'p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
-  #                                     'p_mid inferolateral','p_mid anterolateral', 'p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']].apply(lambda x:'{}'.format(np.array(x)), axis=1)
-#classes = set(labels)
-#mapper = {k: i + 1 for i, k in enumerate(classes)}
-#patient_info['classes'] = classes.map(mapper)
-#print(patient_info['classes'].head())
-#class_weight = class_weight.compute_class_weight('balanced', classes=np.unique(classes), y=patient_info['papical'].values)
 
 #''' Fine tuning step '''
 
@@ -124,28 +110,6 @@ print(vlist.count(1))
 print(vlist.count(0))
 print(y_train[:10])
 print(y_valid[:10])
-
-class_weight = {0:0.50,
-                1:3.88}
-
-# Creating class balance on the training dataset
-#X_train = np.array(x / 255.0 for x in df_train['images'])
-#X_valid = np.array(x / 255.0 for x in df_valid['images'])
-#reshaped_X = X_train.reshape(X_train.shape[0],-1)
-#oversample = SMOTE(k_neighbors=6, sampling_strategy='minority')
-#classes = set(df_train['labels'])
-#mapper = {k: i + 1 for i, k in enumerate(classes)}
-#df_train['classes'] = classes.map(mapper)
-#print(df_train['classes'].head())
-#X_over, y_train = oversample.fit_resample(reshaped_X, df_train['classes'])
-#X_train = X_over.reshape(-1,224,224,1)
-#print(len(y_train))
-#le = LabelEncoder().fit(y_train)
-#y_train = to_categorical(le.transform(y_train), N_CLASSES)
-#print(y_train[:2])
-#le = LabelEncoder().fit(y_valid)
-#y_valid = to_categorical(le.transform(y_valid), N_CLASSES)
-#print(y_valid[:2])
 
 # Data augmentation
 aug = ImageDataGenerator(samplewise_center=True,samplewise_std_normalization=True,rotation_range=20, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.2, zoom_range
