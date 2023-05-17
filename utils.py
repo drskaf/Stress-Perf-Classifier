@@ -249,7 +249,7 @@ def load_multiclass_apical_png(directory, df, im_size):
     """
     # Initiate lists of images and labels
     images = []
-    labels = []
+    indices = []
 
     # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -273,10 +273,10 @@ def load_multiclass_apical_png(directory, df, im_size):
                     out = cv2.merge([gray, gray, gray])
                     #out = gray[..., np.newaxis]
                     images.append(out)
+                    indices.append(int(folder_strip))
 
-                    # Attach classes
-                    patient_info = df[df["ID"].values == int(folder_strip)]
-                    the_class = patient_info['papical']
-                    labels.append(the_class)
+    idx_df = pd.DataFrame(indices, columns=['ID'])
+    info_df = pd.merge(df, idx_df, on=['ID'])
+    info_df['images'] = images
 
-    return (np.array(images), np.array(labels))
+    return (info_df)
