@@ -35,7 +35,7 @@ WIDTH = 224
 HEIGHT = 672
 BATCH_SIZE = 64
 NUM_EPOCHS = 500
-N_CLASSES = 1
+N_CLASSES = 16
 
 # Load dataframe and creating classes
 patient_info = pd.read_csv('/Users/ebrahamalskaf/Documents/patient_info.csv')
