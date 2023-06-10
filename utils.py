@@ -16,7 +16,7 @@ import nibabel as nib
 import dicom2nifti.settings as settings
 
 
-def load_label_png(directory, target, df_info, im_size):
+def load_multislice(directory, df, im_size):
     """
     Read through .png images in sub-folders, read through label .csv file and
     annotate
@@ -30,6 +30,7 @@ def load_label_png(directory, target, df_info, im_size):
     # Initiate lists of images and labels
     images = []
     labels = []
+    total = []
 
     # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -38,36 +39,58 @@ def load_label_png(directory, target, df_info, im_size):
         if len(files) > 1:
             folder = os.path.split(root)[1]
             folder_strip = folder.rstrip('_')
-            dir_name = int(folder_strip)
-            dir_path = os.path.join(directory, folder)
-
+            info_df = df[df['ID'] == int(folder_strip)]
             for file in files:
                 if '.DS_Store' in files:
                     files.remove('.DS_Store')
-
+                dir_path = os.path.join(directory, folder)
                 # Loading images
                 file_name = os.path.basename(file)[0]
                 if file_name == 'b':
-                    img1 = mpimg.imread(os.path.join(dir_path, file))
-                    img1 = resize(img1, (im_size, im_size))
-                elif file_name == 'm':
-                    img2 = mpimg.imread(os.path.join(dir_path, file))
-                    img2 = resize(img2, (im_size, im_size))
-                elif file_name == 'a':
-                    img3 = mpimg.imread(os.path.join(dir_path, file))
-                    img3 = resize(img3, (im_size, im_size))
-
-                    out = cv2.vconcat([img1, img2, img3])
-                    gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
-                    out = gray[..., np.newaxis]
-                    
-                    patient_info = df[df["ID"].values == int(folder_strip)]
-                    the_class = patient_info[target]
-
+                    the_class = np.array(info_df[['p_basal anterior','p_basal anteroseptum']]) #,'p_basal inferoseptum','p_basal inferior'
+                        #,'p_basal inferolateral', 'p_basal anterolateral']])
+                    the_class = np.squeeze(the_class)
+                    tot = _sum(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+                    # out = gray[..., np.newaxis]
                     images.append(out)
                     labels.append(the_class)
+                    total.append(tot)
 
-    return (np.array(images), np.array(labels))
+
+                elif file_name == 'm':
+                    the_class = np.array(info_df[['p_mid anterior','p_mid anteroseptum']]) #,'p_mid inferoseptum','p_mid inferior',
+                                       #'p_mid inferolateral','p_mid anterolateral']])
+                    the_class = np.squeeze(the_class)
+                    tot = _sum(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+                    # out = gray[..., np.newaxis]
+                    images.append(out)
+                    labels.append(the_class)
+                    total.append(tot)
+
+
+                elif file_name == 'a':
+                    the_class = np.array(info_df[['p_apical anterior', 'p_apical septum']]) #,'p_apical inferior','p_apical lateral']])
+                    the_class = np.squeeze(the_class)
+                    #the_class = np.pad(the_class, (0,2), 'constant', constant_values=0)
+                    tot = _sum(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+                    # out = gray[..., np.newaxis]
+                    images.append(out)
+                    labels.append(the_class)
+                    total.append(tot)
+
+    return (np.array(images), labels, total)
 
 
 def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
@@ -184,99 +207,5 @@ def centre_crop(img, new_width=None, new_height=None):
     return centre_cropped_img
 
 
-def load_image_png(directory, df, im_size):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-    Return:
-        images as a dataframe
-    """
-    # Initiate lists of images and labels
-    images = []
-    indices = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'b':
-                    img1 = mpimg.imread(os.path.join(dir_path, file))
-                    img1 = resize(img1, (im_size, im_size))
-                elif file_name == 'm':
-                    img2 = mpimg.imread(os.path.join(dir_path, file))
-                    img2 = resize(img2, (im_size, im_size))
-                elif file_name == 'a':
-                    img3 = mpimg.imread(os.path.join(dir_path, file))
-                    img3 = resize(img3, (im_size, im_size))
-
-                    out = cv2.vconcat([img1, img2, img3])
-                    gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
-                    out = gray[..., np.newaxis]
-
-                    images.append(out)
-                    indices.append(int(folder_strip))
-
-    idx_df = pd.DataFrame(indices, columns=['ID'])
-    info_df = pd.merge(df, idx_df, on=['ID'])
-    info_df['images'] = images
-
-    return (info_df)
 
 
-def load_multiclass_apical_png(directory, df, im_size):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    indices = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            dir_path = os.path.join(directory, folder)
-
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'a':
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-                    #out = gray[..., np.newaxis]
-                    images.append(out)
-                    indices.append(int(folder_strip))
-
-    idx_df = pd.DataFrame(indices, columns=['ID'])
-    info_df = pd.merge(df, idx_df, on=['ID'])
-    info_df['images'] = images
-
-    return (info_df)
