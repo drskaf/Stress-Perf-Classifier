@@ -51,10 +51,7 @@ model1.load_weights("models/aha_ant_VGG19_my_model.best.hdf5")
 # Predict with model
 preds1 = model1.predict(testX)
 print(preds1[:20])
-pred_test_cl1 = []
-for p in preds1:
-    pred = np.argmax(p, axis=0)
-    pred_test_cl1.append(pred)
+pred_test_cl1 = pred_test_cl1 = list(map(lambda x: 0 if x[0]<0.5 else 1, preds1))
 pred_test_cl1 = list(map(lambda x: 0 if x<0.5 else 1, pred_test_cl1))
 print(pred_test_cl1[:20])
 print(survival_yhat[:20])
