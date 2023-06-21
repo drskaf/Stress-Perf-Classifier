@@ -20,7 +20,8 @@ from keras.utils import to_categorical
 import cv2
 from imblearn.over_sampling import RandomOverSampler, SMOTE
 from collections import Counter
-from sklearn.utils import class_weight
+from random import sample
+
 
 # Command line arguments
 ap = argparse.ArgumentParser()
@@ -32,20 +33,21 @@ args = vars(ap.parse_args())
 INPUT_DIM = 224
 WIDTH = 224
 HEIGHT = 672
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 NUM_EPOCHS = 500
-N_CLASSES = 16
+N_CLASSES = 1
 
 # Load dataframe and creating classes
 patient_info = pd.read_csv('/Users/ebrahamalskaf/Documents/patient_info.csv')
 
-                             ### Training apical AHA segments classification ###
+          ### Training apical AHA segments classification ###
 
 # Load images and label them
-(info_df) = utils.load_label_png(args["directory"], patient_info, INPUT_DIM)
+(df) = utils.load_multislice(args["directory"], patient_info, INPUT_DIM)
+print(len(df))
 
-print(len(info_df))
-
+class_weight = {0: 0.574,
+                1: 3.893}
 
 #''' Fine tuning step '''
 
@@ -62,12 +64,12 @@ else:
 
 from keras.applications.vgg16 import VGG16
 from keras.applications.resnet import ResNet50
-model = VGG16(include_top=False, input_shape=(672, 224, 3), weights='imagenet')
-#model = ResNet50(include_top=True, weights='imagenet')
+model = VGG16(include_top=False, input_shape=(224, 224, 3), weights='imagenet')
+#model = ResNet50(include_top=False, input_shape=(224, 224, 3), weights='imagenet')
 
 transfer_layer = model.get_layer('block5_pool')
 vgg_model = Model(inputs = model.input, outputs = transfer_layer.output)
-#transfer_layer = model.get_layer('avg_pool')
+#transfer_layer = model.get_layer('conv5_block3_out')
 #resnet_model = Model(inputs = model.input, outputs = transfer_layer.output)
 
 #for layer in resnet_model.layers:
@@ -90,20 +92,28 @@ if gpus:
         tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration
                                                                       (memory_limit=4096)])
 # Splitting data
-(df_train, df_valid) = train_test_split(info_df, train_size=0.7, random_state=42)
-X_train = np.array([x for x in df_train['images']])
+(df_train, df_valid) = train_test_split(df, train_size=0.8, stratify=df['Labels'])
+p_ind_train = df_train[df_train["Labels"]==1].index.tolist()
+np_ind_train = df_train[df_train["Labels"]==0].index.tolist()
+np_sample_train = sample(np_ind_train, len(p_ind_train))
+df_train = df_train.loc[p_ind_train + np_sample_train]
+p_ind_valid = df_valid[df_valid["Labels"]==1].index.tolist()
+np_ind_valid = df_valid[df_valid["Labels"]==0].index.tolist()
+np_sample_valid = sample(np_ind_valid, 7*len(p_ind_valid))
+df_valid = df_valid.loc[p_ind_valid + np_sample_valid]
+X_train = np.array([x for x in df_train['Images']])
 print(X_train.shape)
-X_valid = np.array([z for z in df_valid['images']])
-y_train = np.array(df_train[['p_basal anterior','p_basal anteroseptum','p_basal inferoseptum','p_basal inferior'
-                        ,'p_basal inferolateral', 'p_basal anterolateral', 'p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
-                                       'p_mid inferolateral','p_mid anterolateral', 'p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']])
-print(y_train[:5])
-print(y_train.shape)
-y_valid = np.array(df_valid[['p_basal anterior','p_basal anteroseptum','p_basal inferoseptum','p_basal inferior'
-                        ,'p_basal inferolateral', 'p_basal anterolateral', 'p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
-                                       'p_mid inferolateral','p_mid anterolateral', 'p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']])
-print(y_valid[:5])
+X_valid = np.array([x for x in df_valid['Images']])
+print(X_valid.shape)
 
+y_train = np.array(df_train["Labels"])
+tlist = y_train.tolist()
+print(tlist.count(1))
+y_valid = np.array(df_valid["Labels"])
+vlist = y_valid.tolist()
+print(vlist.count(1))
+print(y_train[:10])
+print(y_valid[:10])
 
 # Data augmentation
 aug = ImageDataGenerator(samplewise_center=True,samplewise_std_normalization=True,rotation_range=20, width_shift_range=0.1, height_shift_range=0.1, shear_range=0.2, zoom_range
@@ -131,11 +141,11 @@ def my_tf_loss_fn(y_true, y_pred):
     y_true = tf.cast(y_true, tf.float32)
     return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=7)
 Loss = BinaryCrossentropy()
-#apical_model = tf_cnns.MiniVGGNet.build(INPUT_DIM, INPUT_DIM, depth=1, classes=N_CLASSES)
-my_model.compile(loss=Loss, optimizer=Opt, metrics='accuracy')
-weigth_path = "{}_my_model.best.hdf5".format("aha_VGG19")
-checkpoint = ModelCheckpoint(weigth_path, monitor='val_loss', save_best_only=True, mode='min', save_weights_only=False)
-early = EarlyStopping(monitor='val_loss', mode='min', patience=20)
+model = tf_cnns.LeNet.build(INPUT_DIM, INPUT_DIM, depth=1, classes=N_CLASSES)
+my_model.compile(loss=Loss, optimizer=Opt, metrics=METRICS)
+weigth_path = "{}_my_model.best.hdf5".format("aha4_VGG19")
+checkpoint = ModelCheckpoint(weigth_path, monitor='val_prc', save_best_only=True, mode='max', save_weights_only=False)
+early = EarlyStopping(monitor='val_prc', mode='max', patience=30)
 callbacks_list = [checkpoint]
 
 logdir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -147,19 +157,19 @@ history = my_model.fit_generator(aug.flow(X_train, y_train, batch_size=BATCH_SIZ
                   steps_per_epoch=len(X_train )// BATCH_SIZE, callbacks=[early, callbacks_list, tensorboard_callback], verbose=1)
 
 # summarize history for loss
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
+plt.plot(history.history['prc'])
+plt.plot(history.history['val_prc'])
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.title('AHA perfusion classification CNN')
-plt.ylabel('accuracy')
+plt.ylabel('prc')
 plt.xlabel('epoch')
-plt.legend(['train accuracy', 'validation accuracy', 'train loss', 'validation loss'], loc='upper left')
+plt.legend(['train prc', 'validation prc', 'train loss', 'validation loss'], loc='upper right')
 plt.show()
 
 # Saving model data
 model_json = my_model.to_json()
-with open("aha_VGG19.json", "w") as json_file:
+with open("aha4_VGG19.json", "w") as json_file:
     json_file.write(model_json)
 
 K.clear_session()
