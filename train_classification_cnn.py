@@ -126,9 +126,6 @@ METRICS = [
 ]
 
 Opt = Adam(lr=0.001)
-def my_tf_loss_fn(y_true, y_pred):
-    y_true = tf.cast(y_true, tf.float32)
-    return tf.nn.weighted_cross_entropy_with_logits(y_true, y_pred, pos_weight=7)
 Loss = BinaryCrossentropy()
 model = tf_cnns.LeNet.build(INPUT_DIM, INPUT_DIM, depth=1, classes=N_CLASSES)
 my_model.compile(loss=Loss, optimizer=Opt, metrics=METRICS)
