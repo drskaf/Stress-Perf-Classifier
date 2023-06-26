@@ -4,24 +4,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import argparse
 import os
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder, MinMaxScaler
 import tensorflow as tf
-from sklearn.svm import SVC
-from sklearn.linear_model import LogisticRegression
-from keras.utils import to_categorical
 from keras.models import model_from_json, load_model
 import matplotlib.image as mpimg
 from skimage.transform import resize
 import cv2
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, roc_curve, classification_report, precision_recall_curve, average_precision_score
-import pickle
-from random import sample
-from sklearn.model_selection import train_test_split
 import scipy.stats
-import utils
-from sklearn.preprocessing import StandardScaler
-from keras.losses import BinaryCrossentropy
-from tensorflow.keras.optimizers import Adam
 
 # Command line arguments
 ap = argparse.ArgumentParser()
