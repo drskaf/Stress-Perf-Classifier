@@ -207,5 +207,142 @@ def centre_crop(img, new_width=None, new_height=None):
     return centre_cropped_img
 
 
+def load_basal_slice(directory, df, im_size, name):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+     name: name of the AHA segment
+    Return:
+        resized images with their labels
+    """
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            info_df = df[df['ID'] == int(folder_strip)]
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'b':
+                    the_class = np.array(info_df[name])
+                    #the_class = np.squeeze(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+
+                    images.append(out)
+                    labels.append(the_class)
+                else:
+                    continue
+
+    return (np.array(images), np.array(labels))
+
+
+def load_mid_slice(directory, df, im_size, name):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+     name: name of the AHA segment
+    Return:
+        resized images with their labels
+    """
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            info_df = df[df['ID'] == int(folder_strip)]
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'm':
+                    the_class = np.array(info_df[name])
+                    #the_class = np.squeeze(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+
+                    images.append(out)
+                    labels.append(the_class)
+                else:
+                    continue
+
+    return (np.array(images), np.array(labels))
+
+
+def load_apical_slice(directory, df, im_size, name):
+    """
+    Read through .png images in sub-folders, read through label .csv file and
+    annotate
+    Args:
+     directory: path to the data directory
+     df_info: .csv file containing the label information
+     im_size: target image size
+     name: name of the AHA segment
+    Return:
+        resized images with their labels
+    """
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            info_df = df[df['ID'] == int(folder_strip)]
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'a':
+                    the_class = np.array(info_df[name])
+                    #the_class = np.squeeze(the_class)
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    out = cv2.merge([gray, gray, gray])
+
+                    images.append(out)
+                    labels.append(the_class)
+                else:
+                    continue
+
+    return (np.array(images), np.array(labels))
+
 
 
