@@ -11,6 +11,7 @@ from skimage.transform import resize
 import cv2
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, roc_curve, classification_report, precision_recall_curve, average_precision_score
 import scipy.stats
+import utils
 
 # Command line arguments
 ap = argparse.ArgumentParser()
@@ -20,148 +21,9 @@ args = vars(ap.parse_args())
 # Load dataframe and creating classes
 patient_info = pd.read_csv('/Users/ebrahamalskaf/Documents/patient_info.csv')
 
-# Load images and label them
-def load_basal_slice(directory, df, im_size, name):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-     name: name of the AHA segment
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    labels = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'b':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-
-                    images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
-
-    return (np.array(images), np.array(labels))
-
-
-def load_mid_slice(directory, df, im_size, name):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-     name: name of the AHA segment
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    labels = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'm':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-
-                    images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
-
-    return (np.array(images), np.array(labels))
-
-
-def load_apical_slice(directory, df, im_size, name):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-     name: name of the AHA segment
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    labels = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'a':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-
-                    images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
-
-    return (np.array(images), np.array(labels))
-
-
 # Load trained models
 # AHA1
-(testX, survival_yhat1) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal anterior')
+(testX, survival_yhat1) = utils.load_basal_slice(args["directory"], patient_info, 224, name='p_basal anterior')
 json_file = open('aha10_VGG19.json','r')
 model1_json = json_file.read()
 json_file.close()
@@ -171,7 +33,7 @@ model1.load_weights("aha10_VGG19_my_model.best.hdf5")
 preds1 = model1.predict(testX)
 
 # AHA2
-(testX, survival_yhat2) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal anteroseptum')
+(testX, survival_yhat2) = utils.load_basal_slice(args["directory"], patient_info, 224, name='p_basal anteroseptum')
 json_file = open('models/AHA2/aha2_VGG19.json','r')
 model2_json = json_file.read()
 json_file.close()
@@ -181,7 +43,7 @@ model2.load_weights("models/AHA2/aha2_VGG19_my_model.best.hdf5")
 preds2 = model2.predict(testX)
 
 # AHA3
-(testX, survival_yhat3) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal inferoseptum')
+(testX, survival_yhat3) = utils.load_basal_slice(args["directory"], patient_info, 224, name='p_basal inferoseptum')
 json_file = open('models/AHA3/aha3_VGG19.json','r')
 model3_json = json_file.read()
 json_file.close()
@@ -191,7 +53,7 @@ model3.load_weights("models/AHA3/aha3_VGG19_my_model.best.hdf5")
 preds3 = model3.predict(testX)
 
 # AHA4
-(testX, survival_yhat4) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal inferior')
+(testX, survival_yhat4) = utilsload_basal_slice(args["directory"], patient_info, 224, name='p_basal inferior')
 json_file = open('models/AHA4/aha4_VGG19.json','r')
 model4_json = json_file.read()
 json_file.close()
@@ -201,7 +63,7 @@ model4.load_weights("models/AHA4/aha4_VGG19_my_model.best.hdf5")
 preds4 = model4.predict(testX)
 
 # AHA5
-(testX, survival_yhat5) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal inferolateral')
+(testX, survival_yhat5) = utils.load_basal_slice(args["directory"], patient_info, 224, name='p_basal inferolateral')
 json_file = open('models/AHA5/aha5_VGG19.json','r')
 model5_json = json_file.read()
 json_file.close()
@@ -211,7 +73,7 @@ model5.load_weights("models/AHA5/aha5_VGG19_my_model.best.hdf5")
 preds5 = model5.predict(testX)
 
 # AHA6
-(testX, survival_yhat6) = load_basal_slice(args["directory"], patient_info, 224, name='p_basal anterolateral')
+(testX, survival_yhat6) = utils.load_basal_slice(args["directory"], patient_info, 224, name='p_basal anterolateral')
 json_file = open('models/AHA6/aha6_VGG19.json','r')
 model6_json = json_file.read()
 json_file.close()
@@ -221,7 +83,7 @@ model6.load_weights("models/AHA6/aha6_VGG19_my_model.best.hdf5")
 preds6 = model6.predict(testX)
 
 # AHA7
-(testX, survival_yhat7) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid anterior')
+(testX, survival_yhat7) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid anterior')
 json_file = open('models/AHA7/aha7_VGG19.json','r')
 model7_json = json_file.read()
 json_file.close()
@@ -231,7 +93,7 @@ model7.load_weights("models/AHA7/aha7_VGG19_my_model.best.hdf5")
 preds7 = model7.predict(testX)
 
 # AHA8
-(testX, survival_yhat8) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid anteroseptum')
+(testX, survival_yhat8) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid anteroseptum')
 json_file = open('models/AHA8/aha8_VGG19.json','r')
 model8_json = json_file.read()
 json_file.close()
@@ -241,7 +103,7 @@ model8.load_weights("models/AHA8/aha8_VGG19_my_model.best.hdf5")
 preds8 = model8.predict(testX)
 
 # AHA9
-(testX, survival_yhat9) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferoseptum')
+(testX, survival_yhat9) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferoseptum')
 json_file = open('models/AHA9/aha9_VGG19.json','r')
 model9_json = json_file.read()
 json_file.close()
@@ -251,7 +113,7 @@ model9.load_weights("models/AHA9/aha9_VGG19_my_model.best.hdf5")
 preds9 = model9.predict(testX)
 
 # AHA10
-(testX, survival_yhat10) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferior')
+(testX, survival_yhat10) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferior')
 json_file = open('models/AHA10/aha10_VGG19.json','r')
 model10_json = json_file.read()
 json_file.close()
@@ -261,7 +123,7 @@ model10.load_weights("models/AHA10/aha10_VGG19_my_model.best.hdf5")
 preds10 = model10.predict(testX)
 
 # AHA11
-(testX, survival_yhat11) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferolateral')
+(testX, survival_yhat11) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid inferolateral')
 json_file = open('models/AHA11/aha11_VGG19.json','r')
 model11_json = json_file.read()
 json_file.close()
@@ -271,7 +133,7 @@ model11.load_weights("models/AHA11/aha11_VGG19_my_model.best.hdf5")
 preds11 = model11.predict(testX)
 
 # AHA12
-(testX, survival_yhat12) = load_mid_slice(args["directory"], patient_info, 224, name='p_mid anterolateral')
+(testX, survival_yhat12) = utils.load_mid_slice(args["directory"], patient_info, 224, name='p_mid anterolateral')
 json_file = open('models/AHA12/aha12_VGG19.json','r')
 model12_json = json_file.read()
 json_file.close()
@@ -281,7 +143,7 @@ model12.load_weights("models/AHA12/aha12_VGG19_my_model.best.hdf5")
 preds12 = model12.predict(testX)
 
 # AHA13
-(testX, survival_yhat13) = load_apical_slice(args["directory"], patient_info, 224, name='p_apical anterior')
+(testX, survival_yhat13) = utils.load_apical_slice(args["directory"], patient_info, 224, name='p_apical anterior')
 json_file = open('models/AHA13/aha13_VGG19.json','r')
 model13_json = json_file.read()
 json_file.close()
@@ -291,7 +153,7 @@ model13.load_weights("models/AHA13/aha13_VGG19_my_model.best.hdf5")
 preds13 = model13.predict(testX)
 
 # AHA14
-(testX, survival_yhat14) = load_apical_slice(args["directory"], patient_info, 224, name='p_apical septum')
+(testX, survival_yhat14) = utils.load_apical_slice(args["directory"], patient_info, 224, name='p_apical septum')
 json_file = open('models/AHA14/aha14_VGG19.json','r')
 model14_json = json_file.read()
 json_file.close()
@@ -301,7 +163,7 @@ model14.load_weights("models/AHA14/aha14_VGG19_my_model.best.hdf5")
 preds14 = model14.predict(testX)
 
 # AHA15
-(testX, survival_yhat15) = load_apical_slice(args["directory"], patient_info, 224, name='p_apical inferior')
+(testX, survival_yhat15) = utils.load_apical_slice(args["directory"], patient_info, 224, name='p_apical inferior')
 json_file = open('models/AHA15/aha15_VGG19.json','r')
 model15_json = json_file.read()
 json_file.close()
@@ -311,7 +173,7 @@ model15.load_weights("models/AHA15/aha15_VGG19_my_model.best.hdf5")
 preds15 = model15.predict(testX)
 
 # AHA16
-(testX, survival_yhat16) = load_apical_slice(args["directory"], patient_info, 224, name='p_apical lateral')
+(testX, survival_yhat16) = utils.load_apical_slice(args["directory"], patient_info, 224, name='p_apical lateral')
 json_file = open('models/AHA16/aha16_VGG19.json','r')
 model16_json = json_file.read()
 json_file.close()
