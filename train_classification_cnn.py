@@ -82,25 +82,25 @@ if gpus:
                                                                       (memory_limit=4096)])
 # Splitting data
 (df_train, df_valid) = train_test_split(df, train_size=0.8, stratify=df['Labels'])
-p_ind_train = df_train[df_train["Labels"]==1].index.tolist()
-np_ind_train = df_train[df_train["Labels"]==0].index.tolist()
-np_sample_train = sample(np_ind_train, len(p_ind_train))
-df_train = df_train.loc[p_ind_train + np_sample_train]
-p_ind_valid = df_valid[df_valid["Labels"]==1].index.tolist()
-np_ind_valid = df_valid[df_valid["Labels"]==0].index.tolist()
-np_sample_valid = sample(np_ind_valid, 7*len(p_ind_valid))
-df_valid = df_valid.loc[p_ind_valid + np_sample_valid]
-X_train = np.array([x for x in df_train['Images']])
-print(X_train.shape)
-X_valid = np.array([x for x in df_valid['Images']])
-print(X_valid.shape)
-
 y_train = np.array(df_train["Labels"])
 tlist = y_train.tolist()
 print(tlist.count(1))
 y_valid = np.array(df_valid["Labels"])
 vlist = y_valid.tolist()
 print(vlist.count(1))
+p_ind_train = df_train[df_train["Labels"]==1].index.tolist()
+np_ind_train = df_train[df_train["Labels"]==0].index.tolist()
+np_sample_train = sample(np_ind_train, len(p_ind_train))
+df_train = df_train.loc[p_ind_train + np_sample_train]
+p_ind_valid = df_valid[df_valid["Labels"]==1].index.tolist()
+np_ind_valid = df_valid[df_valid["Labels"]==0].index.tolist()
+np_sample_valid = sample(np_ind_valid, (len(df) - (tlist.count(1) + vlist.count(1)) // (tlist.count(1) + vlist.count(1))) *len(p_ind_valid))
+df_valid = df_valid.loc[p_ind_valid + np_sample_valid]
+X_train = np.array([x for x in df_train['Images']])
+print(X_train.shape)
+X_valid = np.array([x for x in df_valid['Images']])
+print(X_valid.shape)
+
 print(y_train[:10])
 print(y_valid[:10])
 
