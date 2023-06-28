@@ -127,7 +127,6 @@ METRICS = [
 
 Opt = Adam(lr=0.001)
 Loss = BinaryCrossentropy()
-model = tf_cnns.LeNet.build(INPUT_DIM, INPUT_DIM, depth=1, classes=N_CLASSES)
 my_model.compile(loss=Loss, optimizer=Opt, metrics=METRICS)
 weigth_path = "{}_my_model.best.hdf5".format("aha_VGG19")
 checkpoint = ModelCheckpoint(weigth_path, monitor='val_prc', save_best_only=True, mode='max', save_weights_only=False)
