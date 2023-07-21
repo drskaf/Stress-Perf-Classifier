@@ -27,6 +27,50 @@ y = {'A':0, 'na':0, 'R': 1, 'A + R': 1}
 data['Stress_agent_x'] = data['Stress_agent_x'].map(y)
 data['Stress_agent_x'] = data['Stress_agent_x'].astype('category')
 data['Stress_agent_x'] = data['Stress_agent_x'].cat.codes
+aha_list = ['p_basal anterior','p_basal anteroseptum','p_basal inferoseptum','p_basal inferior'
+                        ,'p_basal inferolateral', 'p_basal anterolateral','p_mid anterior','p_mid anteroseptum','p_mid inferoseptum','p_mid inferior',
+                                       'p_mid inferolateral','p_mid anterolateral','p_apical anterior', 'p_apical septum','p_apical inferior','p_apical lateral']
+
+data_aha = data[aha_list]
+data_aha = data_aha.rename(columns={'p_basal anterior':'AHA1', 'p_basal anteroseptum':'AHA2', 'p_basal inferoseptum':'AHA3',
+                                    'p_basal inferior':'AHA4', 'p_basal inferolateral':'AHA5', 'p_basal anterolateral':'AHA6',
+                                    'p_mid anterior':'AHA7', 'p_mid anteroseptum':'AHA8', 'p_mid inferoseptum':'AHA9',
+                                    'p_mid inferior':'AHA10', 'p_mid inferolateral':'AHA11', 'p_mid anterolateral':'AHA12',
+                                    'p_apical anterior':'AHA13', 'p_apical septum':'AHA14', 'p_apical inferior':'AHA15',
+                                    'p_apical lateral':'AHA16'})
+
+# Plot AHA labels
+categories = list(data_aha.columns.values)
+sns.set(font_scale = 1)
+plt.figure(figsize=(15,8))
+ax= sns.barplot(x=categories, y=data_aha.iloc[:,:].sum().values)
+plt.title("Number of positive perfusion cases in each AHA segment", fontsize=18)
+plt.ylabel('Number of cases', fontsize=14)
+plt.xlabel('AHA segment IDs ', fontsize=14)
+#adding the text labels
+rects = ax.patches
+labels = data_aha.iloc[:,:].sum().values
+for rect, label in zip(rects, labels):
+    height = rect.get_height()
+    ax.text(rect.get_x() + rect.get_width()/2, height + 5, label, ha='center', va='bottom', fontsize=18)
+plt.show()
+
+rowSums = data_aha.iloc[:,:].sum(axis=1)
+multiLabel_counts = rowSums.value_counts()
+multiLabel_counts = multiLabel_counts.iloc[:]
+sns.set(font_scale = 2)
+plt.figure(figsize=(15,8))
+ax = sns.barplot(data=data_aha, x=multiLabel_counts.index, y=multiLabel_counts.values)
+plt.title("Number of cases of multilabel positive segments ")
+plt.ylabel('Number of cases', fontsize=18)
+plt.xlabel('Number of positive labels', fontsize=18)
+#adding the text labels
+rects = ax.patches
+labels = multiLabel_counts.values
+for rect, label in zip(rects, labels):
+    height = rect.get_height()
+    ax.text(rect.get_x() + rect.get_width()/2, height + 5, label, ha='center', va='bottom')
+plt.show()
 
 # Data extraction
 
