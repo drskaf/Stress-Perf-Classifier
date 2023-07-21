@@ -186,6 +186,15 @@ preds16 = model16.predict(testX)
 predictions = np.concatenate((preds1, preds2, preds3, preds4, preds5, preds6, preds7, preds8, preds9, preds10, preds11, preds12, preds13, preds14, preds15, preds16))
 ground_truth = np.concatenate((survival_yhat1, survival_yhat2, survival_yhat3, survival_yhat4, survival_yhat5, survival_yhat6, survival_yhat7, survival_yhat8, survival_yhat9, survival_yhat10, survival_yhat11, survival_yhat12, survival_yhat13, survival_yhat14, survival_yhat15, survival_yhat16))
 
+lad_pred = np.concatenate((preds1, preds2, preds7, preds8, preds13, preds14))
+lad_gt = np.concatenate((survival_yhat1, survival_yhat2, survival_yhat7, survival_yhat8, survival_yhat13, survival_yhat14))
+
+rca_pred = np.concatenate((preds3, preds4, preds9, preds10, preds15))
+rca_gt = np.concatenate((survival_yhat3, survival_yhat4, survival_yhat9, survival_yhat10, survival_yhat15))
+
+lcx_pred = np.concatenate((preds5, preds6, preds11, preds12, preds16))
+lcx_gt = np.concatenate((survival_yhat5, survival_yhat6, survival_yhat11, survival_yhat12, survival_yhat16))
+
 # Plot ROC
 fpr, tpr, _ = roc_curve(ground_truth, predictions[:,0])
 auc = round(roc_auc_score(ground_truth, predictions[:,0]), 2)
@@ -198,7 +207,18 @@ plt.title('Total AHA Classifiers')
 plt.grid()
 plt.show()
 
+# Calculate Cohen Kappa agreeement
+import statsmodels.api as sm
 
+lad_pred = np.array(list(map(lambda x: 0 if x[0]<0.5 else 1, lad_pred)))
+lad_gt = np.squeeze(lad_gt)
+print(cohen_kappa_score(lad_pred, lad_gt))
+rca_pred = np.array(list(map(lambda x: 0 if x[0]<0.5 else 1, rca_pred)))
+rca_gt = np.squeeze(rca_gt)
+print(cohen_kappa_score(rca_pred, rca_gt))
+lcx_pred = np.array(list(map(lambda x: 0 if x[0]<0.5 else 1, lcx_pred)))
+lcx_gt = np.squeeze(lcx_gt)
+print(cohen_kappa_score(lcx_pred, lcx_gt))
 
 
 
