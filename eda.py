@@ -65,11 +65,8 @@ plt.title("Number of cases of multilabel positive segments ")
 plt.ylabel('Number of cases', fontsize=18)
 plt.xlabel('Number of positive labels', fontsize=18)
 #adding the text labels
-rects = ax.patches
-labels = multiLabel_counts.values
-for rect, label in zip(rects, labels):
-    height = rect.get_height()
-    ax.text(rect.get_x() + rect.get_width()/2, height + 5, label, ha='center', va='bottom')
+for i in ax.containers:
+    ax.bar_label(i,)
 plt.show()
 
 # Data extraction
