@@ -1,3 +1,4 @@
+import imageio.v2
 import numpy as np
 import pydicom
 import os
@@ -10,13 +11,22 @@ import glob
 from collections import Counter
 import tensorflow as tf
 import functools
+import dcmstack
+import dicom
+import imageio
 import dicom2nifti
 from pathlib import Path
 import nibabel as nib
 import dicom2nifti.settings as settings
+import tqdm
+import highdicom
+from natsort import natsorted
+import ipyplot
+from PIL import Image
+import re
 
 
-def load_multislice(directory, df, im_size):
+def load_perf_data(directory, df, im_size):
     """
     Read through .png images in sub-folders, read through label .csv file and
     annotate
@@ -29,8 +39,8 @@ def load_multislice(directory, df, im_size):
     """
     # Initiate lists of images and labels
     images = []
-    labels = []
-    total = []
+    #labels = []
+    indices = []
 
     # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -39,7 +49,6 @@ def load_multislice(directory, df, im_size):
         if len(files) > 1:
             folder = os.path.split(root)[1]
             folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
             for file in files:
                 if '.DS_Store' in files:
                     files.remove('.DS_Store')
@@ -47,50 +56,39 @@ def load_multislice(directory, df, im_size):
                 # Loading images
                 file_name = os.path.basename(file)[0]
                 if file_name == 'b':
-                    the_class = np.array(info_df[['p_basal anterior','p_basal anteroseptum']]) #,'p_basal inferoseptum','p_basal inferior'
-                        #,'p_basal inferolateral', 'p_basal anterolateral']])
-                    the_class = np.squeeze(the_class)
-                    tot = _sum(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-                    # out = gray[..., np.newaxis]
-                    images.append(out)
-                    labels.append(the_class)
-                    total.append(tot)
-
-
+                    img1 = mpimg.imread(os.path.join(dir_path, file))
+                    img1 = resize(img1, (im_size, im_size))
                 elif file_name == 'm':
-                    the_class = np.array(info_df[['p_mid anterior','p_mid anteroseptum']]) #,'p_mid inferoseptum','p_mid inferior',
-                                       #'p_mid inferolateral','p_mid anterolateral']])
-                    the_class = np.squeeze(the_class)
-                    tot = _sum(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-                    # out = gray[..., np.newaxis]
-                    images.append(out)
-                    labels.append(the_class)
-                    total.append(tot)
-
-
+                    img2 = mpimg.imread(os.path.join(dir_path, file))
+                    img2 = resize(img2, (im_size, im_size))
                 elif file_name == 'a':
-                    the_class = np.array(info_df[['p_apical anterior', 'p_apical septum']]) #,'p_apical inferior','p_apical lateral']])
-                    the_class = np.squeeze(the_class)
-                    #the_class = np.pad(the_class, (0,2), 'constant', constant_values=0)
-                    tot = _sum(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-                    # out = gray[..., np.newaxis]
-                    images.append(out)
-                    labels.append(the_class)
-                    total.append(tot)
+                    img3 = mpimg.imread(os.path.join(dir_path, file))
+                    img3 = resize(img3, (im_size, im_size))
 
-    return (np.array(images), labels, total)
+                    out = cv2.vconcat([img1, img2, img3])
+                    gray = cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)
+                    gray = resize(gray, (672, 224))
+                    out = cv2.merge([gray, gray, gray])
+                    #out = gray[..., np.newaxis]
+                    #out = np.array(out)
+
+                    # Defining labels
+                    #patient_info = df[df["ID"].values == int(folder_strip)]
+                    #the_class = patient_info[target]
+                    #if df[df["ID"].values == int(folder_strip)][target].values == 1:
+                     #   the_class = 1
+                    #else:
+                     #   the_class = 2
+
+                    images.append(out)
+                    #labels.append(the_class)
+                    indices.append(int(folder_strip))
+
+    idx_df = pd.DataFrame(indices, columns=['ID'])
+    idx_df['Perf'] = images
+    info_df = pd.merge(df, idx_df, on=['ID'])
+
+    return (info_df)
 
 
 def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
@@ -112,74 +110,88 @@ def patient_dataset_splitter(df, patient_key='patient_TrustNumber'):
     return train, validation
 
 
-def compose_perfusion_video(lstFilesDCM):
+def convertNsave(arr, file_dir, dcm_path, index=0):
     """
-    Args:
-        lstFilesDCM (list of dirs): This is a list of the original DICOMs,
-        where the ArrayDicom will be generated from.
-    Return:
-        3D arrays with one dimension for frames number
-    """
-
-    RefDs = pydicom.read_file(lstFilesDCM[0])
-    ConstPixelDims = (len(lstFilesDCM), int(RefDs.Rows), int(RefDs.Columns))
-
-    ArrayDicom = np.zeros(ConstPixelDims, dtype=RefDs.pixel_array.dtype)
-
-    # loop through all the DICOM files
-    for i in lstFilesDCM:
-        # read the file
-        ds = pydicom.read_file(i)
-
-        for j in range(len(lstFilesDCM)):
-            ArrayDicom[j, :, :] = ds.pixel_array
-
-    return ArrayDicom
-
-
-def load_perfusion_data(directory):
-    """
-    Args:
-     directory: the path to the folder where dicom images are stored
-    Return:
-        combined 3D files with 1st dimension as frames depth
+    `arr`: parameter will take a numpy array that represents only one slice.
+    `file_dir`: parameter will take the path to save the slices
+    `index`: parameter will represent the index of the slice, so this parameter will be used to put
+    the name of each slice while using a for loop to convert all the slices
     """
 
-    videoStackList = []
-    indicesStackList = []
-    videoSingleList = []
-    indicesSingleList = []
-    videorawList = []
+    dicom_file = pydicom.read_file(dcm_path)
+    arr = arr.astype('uint16')
+    dicom_file.Rows = arr.shape[0]
+    dicom_file.Columns = arr.shape[1]
+    dicom_file.PhotometricInterpretation = "MONOCHROME2"
+    dicom_file.SamplesPerPixel = 1
+    dicom_file.BitsStored = 16
+    dicom_file.BitsAllocated = 16
+    dicom_file.HighBit = 15
+    dicom_file.PixelRepresentation = 1
+    dicom_file.PixelData = arr.tobytes()
+    dicom_file.save_as(os.path.join(file_dir, f'slice{index}.dcm'))
 
-    dir_paths = sorted(glob.glob(os.path.join(directory, "*")))
-    for dir_path in dir_paths:
-        file_paths = sorted(glob.glob(os.path.join(dir_path, "*.dcm")))
+def nifti2dicom_1file(nifti_dir, out_dir, dcm_path):
+    """
+    This function is to convert only one nifti file into dicom series
+    `nifti_dir`: the path to the one nifti file
+    `out_dir`: the path to output
+    """
 
-        if len(file_paths) > 10:
-            folder = os.path.split(dir_path)[1]
-            print("\nWorking on ", folder)
-            vlist = []
-            vrlist = []
-            for file_path in file_paths:
-                imgraw = pydicom.read_file(file_path)
-                vrlist.append(imgraw)
-                img = imgraw.pixel_array
-                vlist.append(img)
-            videorawList.append(vrlist)
-            videoSingleList.append(vlist)
-            indicesSingleList.append(folder)
+    nifti_file = nib.load(nifti_dir)
+    nifti_array = nifti_file.get_fdata()
+    number_slices = nifti_array.shape[0]
 
+    multi_dicom = []
+    for slice_ in range(number_slices):
+        dicom = convertNsave(nifti_array[slice_,:,:], out_dir, dcm_path, slice_)
+        multi_dicom.append(dicom)
+
+    return multi_dicom
+
+
+def balance_data(df, target_size=12):
+    """
+    Increase the number of samples to number_of_samples for every label
+
+        Example:
+        Current size of the label a: 10
+        Target size: 23
+
+        repeat, mod = divmod(target_size,current_size)
+        2, 3 = divmod(23,10)
+
+        Target size: current size * repeat + mod
+
+    Repeat this example for every label in the dataset.
+    """
+
+    df_groups = df.groupby(['label'])
+    df_balanced = pd.DataFrame({key: [] for key in df.keys()})
+
+    for i in df_groups.groups.keys():
+        df_group = df_groups.get_group(i)
+        df_label = df_group.sample(frac=1)
+        current_size = len(df_label)
+
+        if current_size >= target_size:
+            # If current size is big enough, do nothing
+            pass
         else:
-            folder = os.path.split(dir_path)[1]
-            print("\nWorking on ", folder)
-            for i in file_paths[0:]:
-                # Read stacked dicom and add to list
-                videoraw = pydicom.read_file(os.path.join(dir_path, i), force=True)
-                videoStackList.append(videoraw)
-                indicesStackList.append(folder)
 
-    return videorawList, videoSingleList, indicesSingleList, videoStackList, indicesStackList
+            # Repeat the current dataset if it is smaller than target_size
+            repeat, mod = divmod(target_size, current_size)
 
+            df_label_new = pd.concat([df_label] * repeat, ignore_index=True, axis=0)
+            df_label_remainder = df_group.sample(n=mod)
+
+            df_label_new = pd.concat([df_label_new, df_label_remainder], ignore_index=True, axis=0)
+
+            # print(df_label_new)
+
+        df_balanced = pd.concat([df_balanced, df_label_new], ignore_index=True, axis=0)
+
+    return df_balanced
 
 
 def centre_crop(img, new_width=None, new_height=None):
@@ -188,10 +200,10 @@ def centre_crop(img, new_width=None, new_height=None):
     height = img.shape[0]
 
     if new_width is None:
-        new_width = width//2
+        new_width = width//1.5
 
     if new_height is None:
-        new_height = height//2
+        new_height = height//1.5
 
     left = int(np.ceil((width - new_width) / 2))
     right = width - int(np.floor((width - new_width) / 2))
@@ -207,7 +219,7 @@ def centre_crop(img, new_width=None, new_height=None):
     return centre_cropped_img
 
 
-def load_basal_slice(directory, df, im_size, name):
+def load_multiclass_apical_png(directory, df, im_size):
     """
     Read through .png images in sub-folders, read through label .csv file and
     annotate
@@ -215,13 +227,12 @@ def load_basal_slice(directory, df, im_size, name):
      directory: path to the data directory
      df_info: .csv file containing the label information
      im_size: target image size
-     name: name of the AHA segment
     Return:
         resized images with their labels
     """
     # Initiate lists of images and labels
     images = []
-    labels = []
+    indices = []
 
     # Loop over folders and files
     for root, dirs, files in os.walk(directory, topdown=True):
@@ -230,224 +241,49 @@ def load_basal_slice(directory, df, im_size, name):
         if len(files) > 1:
             folder = os.path.split(root)[1]
             folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
+            dir_path = os.path.join(directory, folder)
+
             for file in files:
                 if '.DS_Store' in files:
                     files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'b':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
 
-                    images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
-
-    return (np.array(images), np.array(labels))
-
-
-def load_mid_slice(directory, df, im_size, name):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-     name: name of the AHA segment
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    labels = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'm':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-
-                    images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
-
-    return (np.array(images), np.array(labels))
-
-
-def load_apical_slice(directory, df, im_size, name):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-     name: name of the AHA segment
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    labels = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            info_df = df[df['ID'] == int(folder_strip)]
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-                dir_path = os.path.join(directory, folder)
                 # Loading images
                 file_name = os.path.basename(file)[0]
                 if file_name == 'a':
-                    the_class = np.array(info_df[name])
-                    #the_class = np.squeeze(the_class)
                     img = mpimg.imread(os.path.join(dir_path, file))
                     img = resize(img, (im_size, im_size))
                     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    out = cv2.merge([gray, gray, gray])
-
+                    #out = cv2.merge([gray, gray, gray])
+                    out = gray[..., np.newaxis]
                     images.append(out)
-                    labels.append(the_class)
-                else:
-                    continue
 
-    return (np.array(images), np.array(labels))
-    
+                    indices.append(int(folder_strip))
 
-def bullseye_plot(ax, data, segBold=None, cmap=None, norm=None):
-    """
-    Bullseye representation for the left ventricle.
+    idx_df = pd.DataFrame(indices, columns=['ID'])
+    info_df = pd.merge(df, idx_df, on=['ID'])
+    info_df['images'] = images
 
-    Parameters
-    ----------
-    ax : axes
-    data : list of int and float
-        The intensity values for each of the 17 segments
-    segBold: list of int, optional
-        A list with the segments to highlight
-    cmap : ColorMap or None, optional
-        Optional argument to set the desired colormap
-    norm : Normalize or None, optional
-        Optional argument to normalize data into the [0.0, 1.0] range
+    return (info_df)
+
+def process_attributes(df, train, valid):
+    continuous = numerical_col_list
+    categorical = categorical_col_list
+    cs = MinMaxScaler()
+    trainContinuous = cs.fit_transform(train[continuous])
+    valContinuous = cs.transform(valid[continuous])
+
+    # One-hot encode categorical data
+    catBinarizer = LabelBinarizer().fit(df[categorical])
+    trainCategorical = catBinarizer.transform(train[categorical])
+    valCategorical = catBinarizer.transform(valid[categorical])
+
+    # Construct our training and testing data points by concatenating
+    # the categorical features with the continous features
+    trainX = np.hstack([trainCategorical, trainContinuous])
+    valX = np.hstack([valCategorical, valContinuous])
+
+    return (trainX, valX)
 
 
-    Notes
-    -----
-    This function create the 17 segment model for the left ventricle according
-    to the American Heart Association (AHA) [1]_
 
-    References
-    ----------
-    .. [1] M. D. Cerqueira, N. J. Weissman, V. Dilsizian, A. K. Jacobs,
-        S. Kaul, W. K. Laskey, D. J. Pennell, J. A. Rumberger, T. Ryan,
-        and M. S. Verani, "Standardized myocardial segmentation and
-        nomenclature for tomographic imaging of the heart",
-        Circulation, vol. 105, no. 4, pp. 539-542, 2002.
-    """
-
-    if segBold is None:
-        segBold = []
-
-    linewidth = 4
-    data = np.array(data).ravel()
-
-    if cmap is None:
-        cmap = plt.cm.viridis
-
-    if norm is None:
-        norm = mpl.colors.Normalize(vmin=data.min(), vmax=data.max())
-
-    theta = np.linspace(0, 2 * np.pi, 768)
-    r = np.linspace(0.2, 1, 4)
-
-    # Create the bound for the segment 17
-    for i in range(r.shape[0]):
-        ax.plot(theta, np.repeat(r[i], theta.shape), "-k", lw=linewidth)
-
-    # Create the bounds for the segments 1-12
-    for i in range(6):
-        theta_i = np.deg2rad(i * 60)
-        ax.plot([theta_i, theta_i], [r[1], 1], "-k", lw=linewidth)
-
-    # Create the bounds for the segments 13-16
-    for i in range(4):
-        theta_i = np.deg2rad(i * 90 - 45)
-        ax.plot([theta_i, theta_i], [r[0], r[1]], "-k", lw=linewidth)
-
-    # Fill the segments 1-6
-    r0 = r[2:4]
-    r0 = np.repeat(r0[:, np.newaxis], 128, axis=1).T
-    for i in range(6):
-        # First segment start at 60 degrees
-        theta0 = theta[i * 128:i * 128 + 128] + np.deg2rad(60)
-        theta0 = np.repeat(theta0[:, np.newaxis], 2, axis=1)
-        z = np.ones((128 - 1, 2 - 1)) * data[i]
-        ax.pcolormesh(theta0, r0, z, cmap=cmap, norm=norm, rasterized=True)
-        if i + 1 in segBold:
-            ax.plot(theta0, r0, "-k", lw=linewidth + 2)
-            ax.plot(theta0[0], [r[2], r[3]], "-k", lw=linewidth + 1)
-            ax.plot(theta0[-1], [r[2], r[3]], "-k", lw=linewidth + 1)
-
-    # Fill the segments 7-12
-    r0 = r[1:3]
-    r0 = np.repeat(r0[:, np.newaxis], 128, axis=1).T
-    for i in range(6):
-        # First segment start at 60 degrees
-        theta0 = theta[i * 128:i * 128 + 128] + np.deg2rad(60)
-        theta0 = np.repeat(theta0[:, np.newaxis], 2, axis=1)
-        z = np.ones((128 - 1, 2 - 1)) * data[i + 6]
-        ax.pcolormesh(theta0, r0, z, cmap=cmap, norm=norm)
-
-    # Fill the segments 13-16
-    r0 = r[0:2]
-    r0 = np.repeat(r0[:, np.newaxis], 192, axis=1).T
-    for i in range(4):
-        # First segment start at 45 degrees
-        theta0 = theta[i * 192:i * 192 + 192] + np.deg2rad(45)
-        theta0 = np.repeat(theta0[:, np.newaxis], 2, axis=1)
-        z = np.ones((192 - 1, 2 - 1)) * data[i + 12]
-        ax.pcolormesh(theta0, r0, z, cmap=cmap, norm=norm)
-
-    # Fill the segments 17
-    if data.size == 17:
-        r0 = np.array([0, r[0]])
-        r0 = np.repeat(r0[:, np.newaxis], theta.size, axis=1).T
-        theta0 = np.repeat(theta[:, np.newaxis], 2, axis=1)
-        z = np.ones((theta.size - 1, 2 - 1)) * data[16]
-        ax.pcolormesh(theta0, r0, z, cmap=cmap, norm=norm)
-
-    ax.set_ylim([0, 1])
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
 
