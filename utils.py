@@ -219,52 +219,6 @@ def centre_crop(img, new_width=None, new_height=None):
     return centre_cropped_img
 
 
-def load_multiclass_apical_png(directory, df, im_size):
-    """
-    Read through .png images in sub-folders, read through label .csv file and
-    annotate
-    Args:
-     directory: path to the data directory
-     df_info: .csv file containing the label information
-     im_size: target image size
-    Return:
-        resized images with their labels
-    """
-    # Initiate lists of images and labels
-    images = []
-    indices = []
-
-    # Loop over folders and files
-    for root, dirs, files in os.walk(directory, topdown=True):
-
-        # Collect perfusion .png images
-        if len(files) > 1:
-            folder = os.path.split(root)[1]
-            folder_strip = folder.rstrip('_')
-            dir_path = os.path.join(directory, folder)
-
-            for file in files:
-                if '.DS_Store' in files:
-                    files.remove('.DS_Store')
-
-                # Loading images
-                file_name = os.path.basename(file)[0]
-                if file_name == 'a':
-                    img = mpimg.imread(os.path.join(dir_path, file))
-                    img = resize(img, (im_size, im_size))
-                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                    #out = cv2.merge([gray, gray, gray])
-                    out = gray[..., np.newaxis]
-                    images.append(out)
-
-                    indices.append(int(folder_strip))
-
-    idx_df = pd.DataFrame(indices, columns=['ID'])
-    info_df = pd.merge(df, idx_df, on=['ID'])
-    info_df['images'] = images
-
-    return (info_df)
-
 def process_attributes(df, train, valid):
     continuous = numerical_col_list
     categorical = categorical_col_list
@@ -284,6 +238,128 @@ def process_attributes(df, train, valid):
 
     return (trainX, valX)
 
+
+def load_basal_slice(directory, df, im_size, name):
+
+
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'b':
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    gray = resize(gray, (224, 224))
+                    out = cv2.merge([gray, gray, gray])
+                    #out = gray[..., np.newaxis]
+                    #out = np.array(out)
+
+                    # Defining labels
+                    patient_info = df[df["ID"].values == int(folder_strip)]
+                    the_class = patient_info[name]
+
+                    images.append(out)
+                    labels.append(the_class)
+
+
+    return (np.array(images), np.array(labels))
+
+
+def load_mid_slice(directory, df, im_size, name):
+
+
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'm':
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    gray = resize(gray, (224, 224))
+                    out = cv2.merge([gray, gray, gray])
+                    #out = gray[..., np.newaxis]
+                    #out = np.array(out)
+
+                    # Defining labels
+                    patient_info = df[df["ID"].values == int(folder_strip)]
+                    the_class = patient_info[name]
+
+                    images.append(out)
+                    labels.append(the_class)
+
+
+    return (np.array(images), np.array(labels))
+
+
+def load_apical_slice(directory, df, im_size, name):
+
+
+    # Initiate lists of images and labels
+    images = []
+    labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+
+        # Collect perfusion .png images
+        if len(files) > 1:
+            folder = os.path.split(root)[1]
+            folder_strip = folder.rstrip('_')
+            for file in files:
+                if '.DS_Store' in files:
+                    files.remove('.DS_Store')
+                dir_path = os.path.join(directory, folder)
+                # Loading images
+                file_name = os.path.basename(file)[0]
+                if file_name == 'a':
+                    img = mpimg.imread(os.path.join(dir_path, file))
+                    img = resize(img, (im_size, im_size))
+
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    gray = resize(gray, (224, 224))
+                    out = cv2.merge([gray, gray, gray])
+                    #out = gray[..., np.newaxis]
+                    #out = np.array(out)
+
+                    # Defining labels
+                    patient_info = df[df["ID"].values == int(folder_strip)]
+                    the_class = patient_info[name]
+
+                    images.append(out)
+                    labels.append(the_class)
+
+
+    return (np.array(images), np.array(labels))
 
 
 
