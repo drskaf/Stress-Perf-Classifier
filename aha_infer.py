@@ -4,7 +4,7 @@ import argparse
 from matplotlib import pyplot as plt
 import matplotlib as mpl
 import utils
-import keras   
+import keras     
 import tensorflow as tf
 from keras.models import model_from_json, load_model
 
