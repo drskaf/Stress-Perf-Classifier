@@ -468,3 +468,128 @@ def bullseye_plot(ax, data, segBold=None, cmap=None, norm=None):
     ax.set_yticklabels([])
     ax.set_xticklabels([])
 
+
+def load_perf_videos(directory, df, im_size, aha_list):
+    Videos = []
+    Labels = []
+
+    # Loop over folders and files
+    for root, dirs, files in os.walk(directory, topdown=True):
+        if '.DS_Store' in files:
+            files.remove('.DS_Store')
+        for dir in dirs:
+            folder_strip = dir.rstrip('_')
+            dir_path = os.path.join(directory, dir)
+            files = sorted(os.listdir(dir_path))
+            # print("\nWorking on ", folder_strip)
+            # Loop over cases with single dicoms
+            if len(files) > 2:
+                video = []
+                for file in files:
+                    if not file.startswith('.'):
+                        dicom = pydicom.read_file(os.path.join(dir_path, file))
+                        img = dicom.pixel_array
+                        img = img.astype(np.float32) / img.max()
+                        img = resize(img, (im_size, im_size))
+                        video.append(img)
+
+                test = {}
+                f = len(video)
+                keys = range(f)
+                # Define series with AIF frames
+                for k in keys:
+                    # Calculate image sharpness
+                    gy, gx = np.gradient(video[k])
+                    gnorm = np.sqrt(gx ** 2, gy ** 2)
+                    sharp = np.average(gnorm)
+                    test[k] = sharp
+                Quar_f = len(video) // 4
+                aif_sharp = np.sum(list(test.values())[:Quar_f])
+                nonaif_sharp = np.sum(list(test.values())[Quar_f + 1:2 * Quar_f])
+
+                if aif_sharp < nonaif_sharp // 2:
+                    '''Work on series with AIF frames'''
+                    img1 = video[(Quar_f+(Quar_f//2)) - 20:(Quar_f+(Quar_f//2)) + 20]
+                    img2 = video[((Quar_f*2)+(Quar_f//2)) - 20:((Quar_f*2)+(Quar_f//2)) + 20]
+                    img3 = video[((Quar_f*3)+(Quar_f//2)) - 20:((Quar_f*3)+(Quar_f//2)) + 20]
+
+                    img = img1 + img2 + img3
+                    img = np.stack(img, axis=0)
+                    Videos.append(img)
+                    Labels.append(df[df["ID"]==int(folder_strip)][aha_list])
+
+                else:
+                    '''Work on series without AIF frames'''
+                    Trip_f = len(video) // 3
+                    img1 = video[(Trip_f // 2) - 20:(Trip_f // 2) + 20]
+                    img2 = video[((Trip_f) + (Trip_f // 2)) - 20:((Trip_f) + (Trip_f // 2)) + 20]
+                    img3 = video[((Trip_f * 2) + (Trip_f // 2)) - 20:((Trip_f * 2) + (Trip_f // 2)) + 20]
+
+                    img = img1 + img2 + img3
+                    img = np.stack(img, axis=0)
+                    Videos.append(img)
+                    Labels.append(df[df["ID"]==int(folder_strip)][aha_list])
+
+            else:
+                # Loop over cases with stacked dicoms
+                for file in files:
+                    if not file.startswith('.'):
+                        videoraw = pydicom.read_file(os.path.join(dir_path, file))
+                        video = videoraw.pixel_array
+                        Video = video.astype(np.float32) / video.max()
+
+                        test = {}
+                        keys = range(len(Video[:,]))
+                        # Define series with AIF frames
+                        for k in keys:
+                            # Calculate image sharpness
+                            gy, gx = np.gradient(Video[k])
+                            gnorm = np.sqrt(gx ** 2, gy ** 2)
+                            sharp = np.average(gnorm)
+                            test[k] = sharp
+                        Quar_f = len(Video[:,]) // 4
+                        aif_sharp = np.sum(list(test.values())[:Quar_f])
+                        nonaif_sharp = np.sum(list(test.values())[Quar_f + 1:2 * Quar_f])
+
+                        if aif_sharp < nonaif_sharp // 2:
+                            '''Work on series with AIF frames'''
+                            img1 = []
+                            for m in Video[(Quar_f + (Quar_f // 2)) - 20:(Quar_f + (Quar_f // 2)) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img1.append(m)
+                            img2 = []
+                            for m in Video[((Quar_f * 2) + (Quar_f // 2)) - 20:((Quar_f * 2) + (Quar_f // 2)) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img2.append(m)
+                            img3 = []
+                            for m in Video[((Quar_f * 3) + (Quar_f // 2)) - 20:((Quar_f * 3) + (Quar_f // 2)) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img3.append(m)
+
+                            img = img1 + img2 + img3
+                            img = np.stack(img, axis=0)
+                            Videos.append(img)
+                            Labels.append(df[df["ID"]==int(folder_strip)][aha_list])
+
+                        else:
+                            '''Work on series without AIF frames'''
+                            img1 = []
+                            Trip_f = len(Video) // 3
+                            for m in Video[(Trip_f // 2) - 20:(Trip_f // 2) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img1.append(m)
+                            img2 = []
+                            for m in Video[((Trip_f) + (Trip_f // 2)) - 20:((Trip_f) + (Trip_f // 2)) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img2.append(m)
+                            img3 = []
+                            for m in Video[((Trip_f * 2) + (Trip_f // 2)) - 20:((Trip_f * 2) + (Trip_f // 2)) + 20]:
+                                m = resize(m, (im_size, im_size))
+                                img3.append(m)
+
+                            img = img1 + img2 + img3
+                            img = np.stack(img, axis=0)
+                            Videos.append(img)
+                            Labels.append(df[df["ID"]==int(folder_strip)][aha_list])
+
+    return (np.array(Videos), np.array(Labels))
