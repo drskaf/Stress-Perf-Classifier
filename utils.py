@@ -481,7 +481,7 @@ def load_perf_videos(directory, df, im_size, aha_list):
             folder_strip = dir.rstrip('_')
             dir_path = os.path.join(directory, dir)
             files = sorted(os.listdir(dir_path))
-            # print("\nWorking on ", folder_strip)
+            #print("\nWorking on ", folder_strip)
             # Loop over cases with single dicoms
             if len(files) > 2:
                 video = []
@@ -509,9 +509,18 @@ def load_perf_videos(directory, df, im_size, aha_list):
 
                 if aif_sharp < nonaif_sharp // 2:
                     '''Work on series with AIF frames'''
-                    img1 = video[(Quar_f+(Quar_f//2)) - 20:(Quar_f+(Quar_f//2)) + 20]
-                    img2 = video[((Quar_f*2)+(Quar_f//2)) - 20:((Quar_f*2)+(Quar_f//2)) + 20]
-                    img3 = video[((Quar_f*3)+(Quar_f//2)) - 20:((Quar_f*3)+(Quar_f//2)) + 20]
+                    img1 = []
+                    for m in video[(Quar_f+(Quar_f//2)) - 20:(Quar_f+(Quar_f//2)) + 20]:
+                        m = m[..., np.newaxis]
+                        img1.append(m)
+                    img2 = []
+                    for m in video[((Quar_f*2)+(Quar_f//2)) - 20:((Quar_f*2)+(Quar_f//2)) + 20]:
+                        m = m[..., np.newaxis]
+                        img2.append(m)
+                    img3 = []
+                    for m in video[((Quar_f*3)+(Quar_f//2)) - 20:((Quar_f*3)+(Quar_f//2)) + 20]:
+                        m = m[..., np.newaxis]
+                        img3.append(m)
 
                     img = img1 + img2 + img3
                     img = np.stack(img, axis=0)
@@ -521,9 +530,18 @@ def load_perf_videos(directory, df, im_size, aha_list):
                 else:
                     '''Work on series without AIF frames'''
                     Trip_f = len(video) // 3
-                    img1 = video[(Trip_f // 2) - 20:(Trip_f // 2) + 20]
-                    img2 = video[((Trip_f) + (Trip_f // 2)) - 20:((Trip_f) + (Trip_f // 2)) + 20]
-                    img3 = video[((Trip_f * 2) + (Trip_f // 2)) - 20:((Trip_f * 2) + (Trip_f // 2)) + 20]
+                    img1 = []
+                    for m in video[(Trip_f // 2) - 20:(Trip_f // 2) + 20]:
+                        m = m[..., np.newaxis]
+                        img1.append(m)
+                    img2 = []
+                    for m in video[((Trip_f) + (Trip_f // 2)) - 20:((Trip_f) + (Trip_f // 2)) + 20]:
+                        m = m[..., np.newaxis]
+                        img2.append(m)
+                    img3 = []
+                    for m in video[((Trip_f * 2) + (Trip_f // 2)) - 20:((Trip_f * 2) + (Trip_f // 2)) + 20]:
+                        m = m[..., np.newaxis]
+                        img3.append(m)
 
                     img = img1 + img2 + img3
                     img = np.stack(img, axis=0)
@@ -556,14 +574,17 @@ def load_perf_videos(directory, df, im_size, aha_list):
                             img1 = []
                             for m in Video[(Quar_f + (Quar_f // 2)) - 20:(Quar_f + (Quar_f // 2)) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img1.append(m)
                             img2 = []
                             for m in Video[((Quar_f * 2) + (Quar_f // 2)) - 20:((Quar_f * 2) + (Quar_f // 2)) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img2.append(m)
                             img3 = []
                             for m in Video[((Quar_f * 3) + (Quar_f // 2)) - 20:((Quar_f * 3) + (Quar_f // 2)) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img3.append(m)
 
                             img = img1 + img2 + img3
@@ -577,14 +598,17 @@ def load_perf_videos(directory, df, im_size, aha_list):
                             Trip_f = len(Video) // 3
                             for m in Video[(Trip_f // 2) - 20:(Trip_f // 2) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img1.append(m)
                             img2 = []
                             for m in Video[((Trip_f) + (Trip_f // 2)) - 20:((Trip_f) + (Trip_f // 2)) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img2.append(m)
                             img3 = []
                             for m in Video[((Trip_f * 2) + (Trip_f // 2)) - 20:((Trip_f * 2) + (Trip_f // 2)) + 20]:
                                 m = resize(m, (im_size, im_size))
+                                m = m[..., np.newaxis]
                                 img3.append(m)
 
                             img = img1 + img2 + img3
@@ -592,4 +616,5 @@ def load_perf_videos(directory, df, im_size, aha_list):
                             Videos.append(img)
                             Labels.append(df[df["ID"]==int(folder_strip)][aha_list])
 
-    return (np.array(Videos), np.array(Labels))
+
+    return (np.array(Videos), np.squeeze(np.array(Labels)))
