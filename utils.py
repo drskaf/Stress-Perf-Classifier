@@ -1,7 +1,7 @@
 import imageio.v2
 import numpy as np
 import pydicom
-import os
+import os   
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
