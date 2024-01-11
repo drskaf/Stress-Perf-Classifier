@@ -239,14 +239,47 @@ predictions = np.concatenate((preds1, preds2, preds3, preds4, preds5, preds6, pr
 predictionsMul = np.concatenate((predsMul1, predsMul2, predsMul3, predsMul4, predsMul5, predsMul6, predsMul7, predsMul8, predsMul9, predsMul10, predsMul11, predsMul12, predsMul13, predsMul14, predsMul15, predsMul16))
 ground_truth = np.concatenate((survival_yhat1, survival_yhat2, survival_yhat3, survival_yhat4, survival_yhat5, survival_yhat6, survival_yhat7, survival_yhat8, survival_yhat9, survival_yhat10, survival_yhat11, survival_yhat12, survival_yhat13, survival_yhat14, survival_yhat15, survival_yhat16))
 
-#lad_pred = np.concatenate((preds1, preds2, preds7, preds8, preds13, preds14))
-#lad_gt = np.concatenate((survival_yhat1, survival_yhat2, survival_yhat7, survival_yhat8, survival_yhat13, survival_yhat14))
+# Calculate Cohen Kappa agreeement
+import statsmodels.api as sm
 
-#rca_pred = np.concatenate((preds3, preds4, preds9, preds10, preds15))
-#rca_gt = np.concatenate((survival_yhat3, survival_yhat4, survival_yhat9, survival_yhat10, survival_yhat15))
+# Coen kappa for cluster classifiers
+precision, recall, thresholds = precision_recall_curve(ground_truth, predictions[:,0])
+predictionsList = np.array(list(map(lambda x: 0 if x<np.mean(thresholds) else 1, predictions)))
+ground_truth = np.squeeze(ground_truth)
+print('Cohen Kappa Score:', cohen_kappa_score(predictionsList, ground_truth))
 
-#lcx_pred = np.concatenate((preds5, preds6, preds11, preds12, preds16))
-#lcx_gt = np.concatenate((survival_yhat5, survival_yhat6, survival_yhat11, survival_yhat12, survival_yhat16))
+# plot confusion matrix
+cm = confusion_matrix(ground_truth, predictionsList)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+plt.show()
+
+# Evaluate model
+print(classification_report(ground_truth, predictionsList))
+print('Cluster Classifier ROCAUC score:',roc_auc_score(ground_truth, predictions[:,0]))
+print('Cluster Classifier Accuracy score:',accuracy_score(ground_truth, predictionsList))
+print('Cluster Classifier Precision:', np.mean(precision))
+print('Cluster Classifier recall:', np.mean(recall))
+print('Cluster Classifier F1 Score:',average_precision_score(ground_truth, predictions[:,0]))
+
+# Cohen kappa for multi-lable classifier
+precisionMul, recallMul, thresholdsMul = precision_recall_curve(ground_truth, predictionsMul[:,0])
+predictionsMulList = np.array(list(map(lambda x: 0 if x<np.mean(thresholdsMul) else 1, predictionsMul)))
+print('Cohen Kappa Score:', cohen_kappa_score(predictionsMulList, ground_truth))
+
+# plot confusion matrix
+cm = confusion_matrix(ground_truth, predictionsMulList)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+disp.plot()
+plt.show()
+
+# Evaluate model
+print(classification_report(ground_truth, predictionsMulList))
+print('Multilabel Classifier ROCAUC score:',roc_auc_score(ground_truth, predictionsMul[:,0]))
+print('Multilabel Classifier Accuracy score:',accuracy_score(ground_truth, predictionsMulList))
+print('Multilabel Classifier Precision:', np.mean(precisionMul))
+print('Multilabel Classifier recall:', np.mean(recallMul))
+print('Multilabel Classifier F1 Score:',average_precision_score(ground_truth, predictionsMul[:,0]))
 
 # Plot ROC
 fpr, tpr, _ = roc_curve(ground_truth, predictions[:,0])
@@ -262,23 +295,12 @@ plt.ylabel('Sensitivity')
 plt.grid()
 plt.show()
 
-
 # Calculate Cohen Kappa agreeement
 import statsmodels.api as sm
 
 predictions = np.array(list(map(lambda x: 0 if x<0.5 else 1, predictions)))
 ground_truth = np.squeeze(ground_truth)
 print('Cohen Kappa Score:', cohen_kappa_score(predictions, ground_truth))
-
-#lad_pred = np.array(list(map(lambda x: 0 if x<0.5 else 1, lad_pred)))
-#lad_gt = np.squeeze(lad_gt)
-#print(cohen_kappa_score(lad_pred, lad_gt))
-#rca_pred = np.array(list(map(lambda x: 0 if x<0.5 else 1, rca_pred)))
-#rca_gt = np.squeeze(rca_gt)
-#print(cohen_kappa_score(rca_pred, rca_gt))
-#lcx_pred = np.array(list(map(lambda x: 0 if x<0.5 else 1, lcx_pred)))
-#lcx_gt = np.squeeze(lcx_gt)
-#print(cohen_kappa_score(lcx_pred, lcx_gt))
 
 # Calculate McNemar's test
 print("Evaluate multi-label classifier vs cluster of classifiers...")
