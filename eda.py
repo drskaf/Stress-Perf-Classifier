@@ -70,6 +70,15 @@ for i in ax.containers:
 plt.show()
 
 # Data extraction
+# percentage of mortality and postive ischaemia
+mortality_data = data[data['Event_x']==1]
+no_mortality_data = data[data['Event_x']==0]
+ischaemia_data1 = mortality_data[mortality_data['Positive_perf']==1]
+ischaemia_data2 = no_mortality_data[no_mortality_data['Positive_perf']==1]
+print(len(ischaemia_data1))
+print(len(ischaemia_data2))
+print("Percentage of positive ischaemia in death events:", len(ischaemia_data1) / len(mortality_data))
+print("Percentage of positive ischaemia when no death:", len(ischaemia_data2) / len(no_mortality_data))
 
 # Dividing into age group
 age_group1 = data[data['Age_on_20.08.2021_x'] <65]
