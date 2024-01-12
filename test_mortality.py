@@ -151,10 +151,15 @@ plt.barh(y=mutual_info.index, width=mi)
 plt.show()
 
 # Plot ROC
+import scipy.stats
+def mean_confidence_interval(data, confidence=0.95):
+    n = len(data)
+    se = scipy.stats.sem(data)
+    m = data
+    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m-h, m+h
 fpr, tpr, _ = roc_curve(survival_yhat, preds[:,0])
-std_tpr = np.std(tpr)
-tprs_upper = tpr + std_tpr
-tprs_lower = tpr - std_tpr
+tprs_lower, tprs_upper = mean_confidence_interval(tpr)
 auc = round(roc_auc_score(survival_yhat, preds[:,0]), 2)
 plt.plot(fpr, tpr, label="HNN AUC="+str(auc), color='purple')
 plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
@@ -166,16 +171,4 @@ plt.title('AUC Models Comparison')
 plt.grid()
 plt.show()
 
-fpr, tpr, _ = roc_curve(survival_yhat, preds[:,0])
-std_tpr = np.std(tpr)
-tprs_upper = tpr + std_tpr
-tprs_lower = tpr - std_tpr
-auc = round(roc_auc_score(survival_yhat, preds[:,0]), 2)
-plt.plot(fpr, tpr, label="HNN AUC="+str(auc), color='purple')
-plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
-plt.legend()
-plt.xlabel('1 - Specificity')
-plt.ylabel('Sensitivity')
-plt.grid()
-plt.show()
 
