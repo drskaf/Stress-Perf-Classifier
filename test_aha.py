@@ -239,6 +239,32 @@ predictions = np.concatenate((preds1, preds2, preds3, preds4, preds5, preds6, pr
 predictionsMul = np.concatenate((predsMul1, predsMul2, predsMul3, predsMul4, predsMul5, predsMul6, predsMul7, predsMul8, predsMul9, predsMul10, predsMul11, predsMul12, predsMul13, predsMul14, predsMul15, predsMul16))
 ground_truth = np.concatenate((survival_yhat1, survival_yhat2, survival_yhat3, survival_yhat4, survival_yhat5, survival_yhat6, survival_yhat7, survival_yhat8, survival_yhat9, survival_yhat10, survival_yhat11, survival_yhat12, survival_yhat13, survival_yhat14, survival_yhat15, survival_yhat16))
 
+# Plot ROC
+import scipy.stats
+def mean_confidence_interval(data, confidence=0.95):
+    n = len(data)
+    se = scipy.stats.sem(data)
+    m = data
+    h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+    return m - h, m + h
+
+fpr, tpr, _ = roc_curve(ground_truth, predictions[:,0])
+tprs_lower, tprs_upper = mean_confidence_interval(tpr)
+auc = round(roc_auc_score(ground_truth, predictions[:,0]), 2)
+plt.plot(fpr, tpr, label="AHA Cluster Classifier AUC="+str(auc), color='navy')
+plt.fill_between(fpr, tprs_lower,tprs_upper, color='navy', alpha=.20)
+fpr, tpr, _ = roc_curve(ground_truth, predictionsMul[:,0])
+tprs_lower, tprs_upper = mean_confidence_interval(tpr)
+auc = round(roc_auc_score(ground_truth, predictionsMul), 2)
+plt.plot(fpr, tpr, label="AHA Multilabel Classifier AUC="+str(auc), color='orange')
+plt.fill_between(fpr, tprs_lower,tprs_upper, color='orange', alpha=.20)
+plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
+plt.legend()
+plt.xlabel('1 - Specificity')
+plt.ylabel('Sensitivity')
+plt.grid()
+plt.show()
+
 # Calculate Cohen Kappa agreeement
 import statsmodels.api as sm
 
@@ -251,6 +277,7 @@ print('Cohen Kappa Score:', cohen_kappa_score(predictionsList, ground_truth))
 # plot confusion matrix
 cm = confusion_matrix(ground_truth, predictionsList)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+plt.title("Confusion matrix cluster classifier")
 disp.plot()
 plt.show()
 
@@ -270,6 +297,7 @@ print('Cohen Kappa Score:', cohen_kappa_score(predictionsMulList, ground_truth))
 # plot confusion matrix
 cm = confusion_matrix(ground_truth, predictionsMulList)
 disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+plt.title("Confusion matrix multilabel classifier")
 disp.plot()
 plt.show()
 
@@ -280,20 +308,6 @@ print('Multilabel Classifier Accuracy score:',accuracy_score(ground_truth, predi
 print('Multilabel Classifier Precision:', np.mean(precisionMul))
 print('Multilabel Classifier recall:', np.mean(recallMul))
 print('Multilabel Classifier F1 Score:',average_precision_score(ground_truth, predictionsMul[:,0]))
-
-# Plot ROC
-fpr, tpr, _ = roc_curve(ground_truth, predictions[:,0])
-auc = round(roc_auc_score(ground_truth, predictions[:,0]), 2)
-plt.plot(fpr, tpr, label="AHA Cluster Classifier AUC="+str(auc), color='navy')
-fpr, tpr, _ = roc_curve(ground_truth, predictionsMul[:,0])
-auc = round(roc_auc_score(ground_truth, predictionsMul[:,0]), 2)
-plt.plot(fpr, tpr, label="AHA Multilabel Classifier AUC="+str(auc), color='orange')
-plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
-plt.legend()
-plt.xlabel('1 - Specificity')
-plt.ylabel('Sensitivity')
-plt.grid()
-plt.show()
 
 # Calculate Cohen Kappa agreeement
 import statsmodels.api as sm
